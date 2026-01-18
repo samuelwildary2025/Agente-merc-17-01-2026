@@ -775,7 +775,6 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
                         ean_result = search_products_vector(search_term, limit=5)
                         
                         # Extrair primeiro EAN válido
-                        import re
                         ean_match = re.search(r'^\d+\) (\d+) - (.+)$', ean_result, re.MULTILINE)
                         if ean_match:
                             ean = ean_match.group(1)
