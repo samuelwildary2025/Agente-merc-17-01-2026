@@ -585,7 +585,12 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
                     logger.debug(f"📝 Msg[{i}] type={msg_type} tool_calls={has_tool_calls} content={content_preview}")
                 
                 # Tentar pegar a última mensagem AI que tenha conteúdo real (não tool call)
-                for msg in reversed(messages):
+                # IMPORTANTE: Só olhar mensagens NOVAS (após o input inicial)
+                input_count = len(all_messages)  # Quantidade de mensagens enviadas ao LLM
+                new_messages = messages[input_count:]  # Apenas mensagens geradas pelo agente
+                logger.debug(f"📨 Mensagens novas geradas: {len(new_messages)}")
+                
+                for msg in reversed(new_messages):
                     # Verificar se é AIMessage
                     if not isinstance(msg, AIMessage):
                         continue
