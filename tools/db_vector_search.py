@@ -1,0 +1,436 @@
+"""
+Busca vetorial de produtos usando pgvector no PostgreSQL.
+Substitui a busca por trigram (db_search.py) por busca semântica com embeddings.
+"""
+import json
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from openai import OpenAI
+from config.settings import settings
+from config.logger import setup_logger
+
+logger = setup_logger(__name__)
+
+# Cliente OpenAI para gerar embeddings
+_openai_client = None
+
+# Ranker FlashRank
+from flashrank import Ranker, RerankRequest
+_ranker = None
+
+def _get_ranker() -> Ranker:
+    """Retorna instância singleton do FlashRank (modelo pequeno)."""
+    global _ranker
+    if _ranker is None:
+        # cache_dir pode ser configurado se necessário
+        _ranker = Ranker(model_name="ms-marco-TinyBERT-L-2-v2", cache_dir="./memory/models")
+    return _ranker
+
+def _get_openai_client() -> OpenAI:
+    """Retorna cliente OpenAI singleton."""
+    global _openai_client
+    if _openai_client is None:
+        api_key = settings.openai_api_key
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY não configurada no .env")
+        _openai_client = OpenAI(api_key=api_key)
+    return _openai_client
+
+
+def _generate_embedding(text: str) -> list[float]:
+    """
+    Gera embedding para um texto usando OpenAI.
+    Usa o modelo text-embedding-3-small (1536 dimensões).
+    """
+    client = _get_openai_client()
+    
+    # Limpar e normalizar o texto
+    text = text.strip()
+    if not text:
+        raise ValueError("Texto vazio para embedding")
+    
+    response = client.embeddings.create(
+        model="text-embedding-3-small",
+        input=text
+    )
+    
+    return response.data[0].embedding
+
+
+def search_products_vector(query: str, limit: int = 20) -> str:
+    """
+    Busca produtos por similaridade vetorial usando pgvector.
+    
+    Args:
+        query: Texto de busca (nome do produto, descrição, etc.)
+        limit: Número máximo de resultados (default: 20)
+    
+    Returns:
+        String formatada com EANs encontrados no formato:
+        EANS_ENCONTRADOS:
+        1) 123456789 - PRODUTO A
+        2) 987654321 - PRODUTO B
+    """
+    # Connection string do banco vetorial
+    conn_str = settings.vector_db_connection_string
+    if not conn_str:
+        # Fallback para o banco de produtos padrão
+        conn_str = settings.products_db_connection_string
+    
+    if not conn_str:
+        return "Erro: String de conexão do banco vetorial não configurada."
+    
+    query = query.strip()
+    if not query:
+        return "Nenhum termo de busca informado."
+    
+    # Lista de produtos que são tipicamente hortifruti (frutas, legumes, verduras)
+    # Quando detectamos um desses, adicionamos contexto para melhorar a busca
+    HORTIFRUTI_KEYWORDS = [
+        "tomate", "cebola", "batata", "alface", "cenoura", "pepino", "pimentao",
+        "abobora", "abobrinha", "berinjela", "beterraba", "brocolis", "couve",
+        "espinafre", "repolho", "rucula", "agriao", "alho", "gengibre", "mandioca",
+        "banana", "maca", "laranja", "limao", "abacaxi", "melancia", "melao",
+        "uva", "morango", "manga", "mamao", "abacate", "goiaba", "pera", "pessego",
+        "ameixa", "kiwi", "coco", "maracuja", "acerola", "caju", "pitanga",
+        "cheiro verde", "coentro", "salsa", "cebolinha", "hortela", "manjericao",
+        "alecrim", "tomilho", "oregano", "louro", "frango", "carne", "peixe",
+        "ovo", "leite", "queijo", "manteiga", "iogurte"
+    ]
+    
+    # Traduções de termos comuns para abreviações usadas no banco
+    TERM_TRANSLATIONS = {
+        "absorvente": "abs",
+        "achocolatado": "achoc",
+        "refrigerante": "refrig",
+        "amaciante": "amac",
+        "desodorante": "desod",
+        "shampoo": "sh",
+        "condicionador": "cond",
+        "hotdog": "pao hot dog maxpaes",
+        "cachorro quente": "pao hot dog maxpaes",
+        "cachorro-quente": "pao hot dog maxpaes",
+        "musarela": "queijo mussarela",
+        "muçarela": "queijo mussarela", 
+        "mussarela": "queijo mussarela",
+        "presunto": "presunto fatiado",
+        # Biscoitos e bolachas
+        "creme crack": "bolacha cream cracker",
+        "cream crack": "bolacha cream cracker",
+        "cracker": "bolacha cream cracker",
+        # Refrigerantes - MELHORADO
+        "guarana": "refrig guarana antarctica",
+        "coca cola": "refrig coca cola pet",
+        "coca-cola": "refrig coca cola pet",
+        "coca cola 2 litros": "refrig coca cola pet 2l",
+        "coca-cola 2 litros": "refrig coca cola pet 2l",
+        "coca cola 2l": "refrig coca cola pet 2l",
+        "coca-cola 2l": "refrig coca cola pet 2l",
+        "fanta": "refrig fanta",
+        "sprite": "refrig sprite",
+        # Padaria - NOVO
+        "carioquinha": "pao frances",
+        "carioquinhas": "pao frances",
+        "pao carioquinha": "pao frances",
+        "pão carioquinha": "pao frances",
+        "pão francês": "pao frances",
+        "pao frances": "pao frances",
+        # Carnes e hambúrguer - NOVO
+        "hamburguer": "hamburguer carne",
+        "hamburger": "hamburguer carne",
+        "carne de hamburguer": "hamburguer carne moida",
+        "carne hamburguer": "hamburguer carne moida",
+        "carne hamburguer": "hamburguer carne moida",
+        # Pães de Pacote / Industrializados
+        "pao de saco": "pao de forma",
+        "pão de saco": "pao de forma",
+        "pacote de pao": "pao de forma",
+        "pacote de pão": "pao de forma",
+        "pao para hamburguer": "pao hamburguer",
+        "pao de hamburguer": "pao hamburguer",
+        "pao para hot dog": "pao hot dog",
+        "pao de hot dog": "pao hot dog",
+        "pao de cachorro quente": "pao hot dog",
+        # Laticínios
+        "leite de saco": "leite liquido",
+        "leite saco": "leite liquido",
+        # Normalização de acentos (banco usa sem acento)
+        "açúcar": "acucar cristal",
+        "açucar": "acucar cristal",
+        "café": "cafe",
+        "maçã": "maca",
+        "feijão": "feijao",
+        # Cervejas - Corrigido para formato do banco (LT = lata, LN = long neck, GRF = garrafa)
+        "cerveja": "cerveja lt 350ml",
+        "cerveja lata": "cerveja lt 350ml",
+        "cerveja latinha": "cerveja lt 350ml",
+        "latinha cerveja": "cerveja lt 350ml",
+        "latinha de cerveja": "cerveja lt 350ml",
+        "cerveja garrafa": "cerveja grf 600ml",
+        "cervejas": "cerveja lt 350ml",
+        # Long neck (várias grafias)
+        "long neck": "cerveja ln 330ml",
+        "longneck": "cerveja ln 330ml",
+        "longneque": "cerveja ln 330ml",
+        "long neque": "cerveja ln 330ml",
+        "cerveja long neck": "cerveja ln 330ml",
+        # Marcas específicas
+        "skol": "cerveja skol lt",
+        "brahma": "cerveja brahma chopp lt",
+        "antartica": "cerveja antarctica lt",
+        "heineken": "cerveja heineken lt",
+        "budweiser": "cerveja budweiser lt",
+        "amstel": "cerveja amstel lt",
+        "bohemia": "cerveja bohemia lt",
+    }
+    
+    query_lower = query.lower().strip()
+    enhanced_query = query
+    
+    # Primeiro, aplicar traduções de termos (ORDENAR por tamanho decrescente para pegar matches maiores primeiro)
+    sorted_translations = sorted(TERM_TRANSLATIONS.items(), key=lambda x: len(x[0]), reverse=True)
+    for term, abbreviation in sorted_translations:
+        if term in query_lower:
+            # SUBSTITUIR COMPLETAMENTE a query para evitar duplicações
+            query = abbreviation
+            enhanced_query = abbreviation
+            logger.info(f"🔄 [TRADUÇÃO] '{term}' → '{abbreviation}'")
+            break
+    
+    # Se a busca é por um produto hortifruti, adiciona contexto para melhorar a relevância
+    # MAS: Se a busca contém termos de produtos processados, NÃO aplicar boost de hortifruti
+    PROCESSED_TERMS = ["doce", "suco", "molho", "extrato", "polpa", "geleia", "compota"]
+    is_processed = any(term in query_lower for term in PROCESSED_TERMS)
+    
+    if not is_processed:
+        query_to_check = query.lower()
+        for keyword in HORTIFRUTI_KEYWORDS:
+            if keyword in query_to_check:
+                # Adiciona contexto de categoria para melhorar a similaridade
+                if keyword in ["frango", "carne", "peixe"]:
+                    enhanced_query = f"{query} açougue carnes"
+                elif keyword in ["ovo", "leite", "queijo", "manteiga", "iogurte"]:
+                    enhanced_query = f"{query} laticínios"
+                else:
+                    enhanced_query = f"{query} hortifruti legumes verduras frutas"
+                logger.info(f"🎯 [BOOST] Query melhorada: '{enhanced_query}'")
+                break
+    else:
+        logger.info(f"⏭️ [BOOST SKIP] Produto processado detectado, pulando boost hortifruti")
+    
+    logger.info(f"🔍 [VECTOR SEARCH] Buscando: '{query}'" + (f" → '{enhanced_query}'" if enhanced_query != query else ""))
+    
+    try:
+        # 1. Gerar embedding da query (com boost se aplicável)
+        query_embedding = _generate_embedding(enhanced_query)
+        # 2. BUSCA HÍBRIDA usando função PostgreSQL (FTS + Vetorial com RRF)
+        with psycopg2.connect(conn_str) as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # Converter embedding para string no formato pgvector
+                embedding_str = f"[{','.join(map(str, query_embedding))}]"
+                
+                # 🔥 BUSCA HÍBRIDA V2: FTS + Vetorial + Boost para HORTI-FRUTI/FRIGORIFICO
+                # Usa RRF (Reciprocal Rank Fusion) para combinar rankings
+                # - full_text_weight: peso da busca por texto
+                # - semantic_weight: peso da busca vetorial
+                # - setor_boost: +0.5 para HORTI-FRUTI e FRIGORIFICO
+                sql = """
+                    SELECT 
+                        h.text,
+                        h.metadata,
+                        h.score as similarity,
+                        h.rank
+                    FROM hybrid_search_v2(
+                        %s,                    -- query_text
+                        %s::vector,            -- query_embedding
+                        %s,                    -- match_count
+                        1.0,                   -- full_text_weight
+                        1.0,                   -- semantic_weight
+                        0.5,                   -- setor_boost (HORTI-FRUTI/FRIGORIFICO)
+                        50                     -- rrf_k (parâmetro RRF)
+                    ) h
+                """
+                
+                logger.info(f"🔀 [HYBRID SEARCH] Query: '{query}' → '{enhanced_query}'")
+                
+                cur.execute(sql, (enhanced_query, embedding_str, limit))
+                results = cur.fetchall()
+                
+                logger.info(f"🔍 [VECTOR SEARCH] Encontrados {len(results)} resultados")
+                
+                # LOG detalhado para debug de relevância
+                if results:
+                    import re
+                    for i, r in enumerate(results[:5]):  # Top 5 para debug
+                        text = r.get("text", "")
+                        sim = r.get("similarity", 0)
+                        match = re.search(r'"produto":\s*"([^"]+)"', text)
+                        nome = match.group(1) if match else text[:40]
+                        cat_match = re.search(r'"categoria1":\s*"([^"]+)"', text)
+                        cat = cat_match.group(1) if cat_match else ""
+                        logger.debug(f"   {i+1}. [{sim:.4f}] {nome} | {cat}")
+                
+                # 🔄 RETRY AUTOMÁTICO: Se o melhor score for muito baixo, tentar com palavras individuais
+                MIN_SCORE_THRESHOLD = 0.50
+                if results and results[0].get("similarity", 0) < MIN_SCORE_THRESHOLD:
+                    logger.info(f"⚠️ [RETRY] Score baixo ({results[0].get('similarity', 0):.3f}), tentando busca por palavras individuais")
+                    
+                    # Dividir query em palavras (ignorar palavras muito curtas e stop words)
+                    STOP_WORDS = {"de", "da", "do", "para", "com", "sem", "um", "uma", "kg", "und", "pct", "tipo", "350ml", "600ml", "330ml", "2l", "1l"}
+                    # Palavras de contexto que devem ser mantidas junto com outras palavras
+                    CONTEXT_WORDS = {"cerveja", "refrigerante", "refrig", "suco", "agua", "vinho", "bebida"}
+                    
+                    words = [w for w in query.lower().split() if len(w) >= 2 and w not in STOP_WORDS]
+                    
+                    # Identificar se há uma palavra de contexto
+                    context_word = None
+                    for w in words:
+                        if w in CONTEXT_WORDS:
+                            context_word = w
+                            break
+                    
+                    if len(words) >= 1:
+                        best_results = results  # Manter resultados originais como fallback
+                        best_score = results[0].get("similarity", 0)
+                        
+                        # Tentar cada palavra individual (mantendo contexto se existir)
+                        for word in words:
+                            if word == context_word:
+                                continue  # Não buscar só a palavra de contexto sozinha
+                            
+                            # Se temos contexto, buscar "contexto + palavra" (ex: "cerveja grf")
+                            search_term = f"{context_word} {word}" if context_word and word != context_word else word
+                            
+                            # Gerar embedding para o termo de busca
+                            term_embedding = _generate_embedding(search_term)
+                            term_embedding_str = f"[{','.join(map(str, term_embedding))}]"
+                            
+                            cur.execute(sql, (search_term, term_embedding_str, limit))
+                            term_results = cur.fetchall()
+                            
+                            if term_results:
+                                term_score = term_results[0].get("similarity", 0)
+                                # Aceitar se score for significativamente melhor
+                                if term_score > best_score + 0.05:
+                                    logger.info(f"✅ [RETRY] Termo '{search_term}' encontrou melhores resultados: {term_score:.3f}")
+                                    best_results = term_results
+                                    best_score = term_score
+                        
+                        results = best_results
+                
+                if not results:
+                    return "Nenhum produto encontrado com esse termo."
+
+                # =========================================================================
+                # 🚀 RE-RANKING COM FLASHRANK
+                # =========================================================================
+                try:
+                    logger.info(f"⚡ [RERANK] Reordenando {len(results)} resultados com FlashRank...")
+                    ranker = _get_ranker()
+                    
+                    # Preparar dados para o FlashRank: [{"id": idx, "text": "conteudo..."}]
+                    passages = []
+                    for i, r in enumerate(results):
+                        # Extrair texto limpo para o ranker comparar com a query
+                        passages.append({
+                            "id": i,
+                            "text": r.get("text", "") # O campo 'text' já contém o JSON dump ou texto cru
+                        })
+                    
+                    # Executar re-rank
+                    rerank_request = RerankRequest(query=query, passages=passages)
+                    reranked_results = ranker.rerank(rerank_request)
+                    
+                    # Reconstruir lista ordenada baseada nos IDs retornados
+                    new_ordered_results = []
+                    for ranked in reranked_results:
+                        original_idx = ranked["id"]
+                        score = ranked["score"]
+                        item = results[original_idx]
+                        item["similarity"] = score # Atualizar score (agora é do cross-encoder)
+                        new_ordered_results.append(item)
+                    
+                    logger.info(f"✅ [RERANK] Reordenação concluída. Top 1 antigo score: {results[0].get('similarity'):.3f} -> Novo: {new_ordered_results[0].get('similarity'):.3f}")
+                    results = new_ordered_results
+                    
+                except Exception as e:
+                    logger.warning(f"⚠️ [RERANK FAILED] Falha no FlashRank, mantendo ordem original: {e}")
+                
+                # 3. Processar e formatar resultados
+                return _format_results(results)
+    
+    except Exception as e:
+        logger.error(f"❌ Erro na busca vetorial: {e}")
+        return f"Erro ao buscar no banco vetorial: {str(e)}"
+
+
+def _extract_ean_and_name(result: dict) -> tuple[str, str]:
+    """
+    Extrai EAN e nome do produto do resultado.
+    O n8n salva os dados em 'text' (conteúdo) e 'metadata' (JSON).
+    """
+    text = result.get("text", "")
+    metadata = result.get("metadata", {})
+    
+    # Tentar extrair do metadata primeiro (mais confiável)
+    if isinstance(metadata, str):
+        try:
+            metadata = json.loads(metadata)
+        except:
+            metadata = {}
+    
+    ean = ""
+    nome = ""
+    
+    # Buscar EAN no metadata ou no texto
+    if metadata:
+        ean = str(metadata.get("codigo_ean", metadata.get("ean", "")))
+        nome = metadata.get("produto", metadata.get("nome", ""))
+    
+    # Se não achou no metadata, parsear do texto
+    if not ean or not nome:
+        # O texto pode estar no formato: {"codigo_ean": 123, "produto": "NOME"}
+        import re
+        
+        # Tentar encontrar codigo_ean no texto
+        ean_match = re.search(r'"codigo_ean":\s*"?(\d+)"?', text)
+        if ean_match:
+            ean = ean_match.group(1)
+        
+        # Tentar encontrar produto no texto
+        nome_match = re.search(r'"produto":\s*"([^"]+)"', text)
+        if nome_match:
+            nome = nome_match.group(1)
+    
+    # Fallback: usar o texto inteiro como nome
+    if not nome and text:
+        nome = text[:100]  # Truncar se muito longo
+    
+    return ean, nome
+
+
+def _format_results(results: list[dict]) -> str:
+    """Formata lista de resultados para o formato esperado pelo agente."""
+    lines = ["EANS_ENCONTRADOS:"]
+    seen_eans = set()  # Evitar duplicatas
+    
+    for i, row in enumerate(results, 1):
+        ean, nome = _extract_ean_and_name(row)
+        similarity = row.get("similarity", 0)
+        
+        # Pular se não tem EAN ou se já vimos esse EAN
+        if not ean or ean in seen_eans:
+            continue
+        
+        seen_eans.add(ean)
+        
+        # Formatar com score de similaridade para debug
+        logger.debug(f"   {i}. {nome} (EAN: {ean}) [Similarity: {similarity:.3f}]")
+        
+        if ean and nome:
+            lines.append(f"{len(seen_eans)}) {ean} - {nome}")
+    
+    if len(lines) == 1:  # Só tem o header
+        return "Nenhum produto com EAN válido encontrado."
+    
+    return "\n".join(lines)
