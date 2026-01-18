@@ -585,12 +585,7 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
                     logger.debug(f"📝 Msg[{i}] type={msg_type} tool_calls={has_tool_calls} content={content_preview}")
                 
                 # Tentar pegar a última mensagem AI que tenha conteúdo real (não tool call)
-                # IMPORTANTE: Só olhar mensagens NOVAS (após o input inicial)
-                input_count = len(all_messages)  # Quantidade de mensagens enviadas ao LLM
-                new_messages = messages[input_count:]  # Apenas mensagens geradas pelo agente
-                logger.debug(f"📨 Mensagens novas geradas: {len(new_messages)}")
-                
-                for msg in reversed(new_messages):
+                for msg in reversed(messages):
                     # Verificar se é AIMessage
                     if not isinstance(msg, AIMessage):
                         continue
@@ -707,8 +702,69 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
                 output = "Não achei esse produto. Pode descrever de outra forma?"
                 logger.info("🔄 Fallback inteligente: produto não encontrado")
             else:
-                output = "Desculpe, não consegui processar sua solicitação. Pode repetir?"
-                logger.warning("⚠️ Resposta vazia do LLM, usando fallback genérico")
+                # 🚨 FALLBACK PARA RESPOSTAS CURTAS DE CONTEXTO (Gemini retornou vazio)
+                # Se a mensagem original é curta e parece ser uma resposta de contexto,
+                # tentar buscar o produto diretamente
+                # Pegar a última mensagem do usuário do estado
+                user_msg = ""
+                for msg in reversed(result.get("messages", [])):
+                    if isinstance(msg, HumanMessage):
+                        user_msg = msg.content if isinstance(msg.content, str) else str(msg.content)
+                        break
+                mensagem_lower = user_msg.lower().strip()
+                
+                # Mapeamento de respostas curtas para buscas de produtos
+                CONTEXT_FALLBACK_SEARCHES = {
+                    "de hot dog": "pao hot dog",
+                    "hot dog": "pao hot dog",
+                    "hotdog": "pao hot dog",
+                    "de hamburguer": "pao hamburguer",
+                    "hamburguer": "pao hamburguer",
+                    "hamburger": "pao hamburguer",
+                    "lata": "cerveja lata 350ml",
+                    "garrafa": "cerveja garrafa 600ml",
+                    "long neck": "cerveja long neck",
+                    "longneck": "cerveja long neck",
+                }
+                
+                search_term = CONTEXT_FALLBACK_SEARCHES.get(mensagem_lower)
+                
+                if search_term and len(mensagem_lower) < 20:
+                    logger.info(f"🔄 Fallback contextual: '{mensagem_lower}' → buscando '{search_term}'")
+                    try:
+                        from tools.http_tools import estoque_preco
+                        from tools.db_vector_search import search_products_vector
+                        
+                        # Buscar o produto
+                        ean_result = search_products_vector(search_term, limit=5)
+                        
+                        # Extrair primeiro EAN válido
+                        import re
+                        ean_match = re.search(r'^\d+\) (\d+) - (.+)$', ean_result, re.MULTILINE)
+                        if ean_match:
+                            ean = ean_match.group(1)
+                            nome = ean_match.group(2).strip()
+                            
+                            # Buscar preço
+                            preco_result = estoque_preco(ean)
+                            
+                            # Extrair preço do resultado
+                            preco_match = re.search(r'R\$\s*([\d,.]+)', preco_result)
+                            if preco_match:
+                                preco = preco_match.group(0)
+                                output = f"O {nome.split()[0]} de {search_term.replace('pao ', '')} está {preco}. Adiciono ao carrinho?"
+                                logger.info(f"✅ Fallback contextual sucesso: {output}")
+                            else:
+                                output = f"Encontrei {nome}. Quer que eu adicione ao carrinho?"
+                        else:
+                            output = "Desculpe, não consegui processar sua solicitação. Pode repetir?"
+                            logger.warning("⚠️ Fallback contextual: não encontrou EAN")
+                    except Exception as e:
+                        logger.error(f"❌ Erro no fallback contextual: {e}")
+                        output = "Desculpe, não consegui processar sua solicitação. Pode repetir?"
+                else:
+                    output = "Desculpe, não consegui processar sua solicitação. Pode repetir?"
+                    logger.warning("⚠️ Resposta vazia do LLM, usando fallback genérico")
         
         logger.info("✅ Agente executado")
         logger.info(f"💬 RESPOSTA: {output[:200]}{'...' if len(output) > 200 else ''}")
