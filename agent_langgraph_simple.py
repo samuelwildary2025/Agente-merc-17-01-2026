@@ -705,32 +705,43 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
                 # 🚨 FALLBACK PARA RESPOSTAS CURTAS DE CONTEXTO (Gemini retornou vazio)
                 # Se a mensagem original é curta e parece ser uma resposta de contexto,
                 # tentar buscar o produto diretamente
-                # Pegar a última mensagem do usuário do estado
+                # Pegar a última mensagem do usuário e a última mensagem da IA (contexto)
                 user_msg = ""
-                for msg in reversed(result.get("messages", [])):
-                    if isinstance(msg, HumanMessage):
+                last_ai_msg = ""
+                messages = result.get("messages", [])
+                
+                for msg in reversed(messages):
+                    if not user_msg and isinstance(msg, HumanMessage):
                         user_msg = msg.content if isinstance(msg.content, str) else str(msg.content)
-                        break
+                    if not last_ai_msg and isinstance(msg, AIMessage) and msg.content:
+                        last_ai_msg = (msg.content if isinstance(msg.content, str) else str(msg.content)).lower()
+                
                 mensagem_lower = user_msg.lower().strip()
                 
-                # Mapeamento de respostas curtas para buscas de produtos
-                CONTEXT_FALLBACK_SEARCHES = {
-                    "de hot dog": "pao hot dog",
-                    "hot dog": "pao hot dog",
-                    "hotdog": "pao hot dog",
-                    "de hamburguer": "pao hamburguer",
-                    "hamburguer": "pao hamburguer",
-                    "hamburger": "pao hamburguer",
-                    "lata": "cerveja lata 350ml",
-                    "garrafa": "cerveja garrafa 600ml",
-                    "long neck": "cerveja long neck",
-                    "longneck": "cerveja long neck",
-                }
+                # Mapeamento inteligente baseado em CONTEXTO
+                search_term = None
                 
-                search_term = CONTEXT_FALLBACK_SEARCHES.get(mensagem_lower)
+                # Se a última pergunta da Ana foi sobre PÃO
+                if "pão" in last_ai_msg or "pao" in last_ai_msg:
+                    if "hot dog" in mensagem_lower or "hotdog" in mensagem_lower:
+                        search_term = "pao hot dog"
+                    elif "hamburguer" in mensagem_lower or "hamburger" in mensagem_lower or "hambúrguer" in mensagem_lower:
+                        search_term = "pao hamburguer"
                 
-                if search_term and len(mensagem_lower) < 20:
-                    logger.info(f"🔄 Fallback contextual: '{mensagem_lower}' → buscando '{search_term}'")
+                # Outros mapeamentos genéricos se o contexto não for específico
+                if not search_term:
+                    GENERIC_MAPPINGS = {
+                        "hot dog": "pao hot dog",
+                        "hotdog": "pao hot dog",
+                        "hamburguer": "pao hamburguer",
+                        "hamburger": "pao hamburguer",
+                        "lata": "cerveja lata 350ml",
+                        "garrafa": "cerveja garrafa 600ml"
+                    }
+                    search_term = GENERIC_MAPPINGS.get(mensagem_lower)
+                
+                if search_term and len(mensagem_lower) < 25:
+                    logger.info(f"🔄 Fallback contextual: '{mensagem_lower}' (Contexto: '{last_ai_msg[:30]}...') → buscando '{search_term}'")
                     try:
                         from tools.http_tools import estoque_preco
                         from tools.db_vector_search import search_products_vector
