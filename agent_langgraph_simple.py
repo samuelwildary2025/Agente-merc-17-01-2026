@@ -718,17 +718,42 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
                 
                 mensagem_lower = user_msg.lower().strip()
                 
-                # Mapeamento inteligente baseado em CONTEXTO
+                # Mapeamento inteligente de ASSUNTOS (Contexto Deslizante)
+                # Se a última mensagem da Ana continha essas palavras, elas "deslizam" para a busca
+                TOPICOS_CONTEXTO = {
+                    "pão": "pao",
+                    "pao": "pao",
+                    "cerveja": "cerveja",
+                    "carne": "carne",
+                    "frango": "frango",
+                    "leite": "leite",
+                    "arroz": "arroz",
+                    "feijão": "feijao",
+                    "feijao": "feijao",
+                    "açúcar": "acucar",
+                    "acucar": "acucar",
+                    "café": "cafe",
+                    "cafe": "cafe"
+                }
+
                 search_term = None
+                prefixo_contexto = ""
                 
-                # Se a última pergunta da Ana foi sobre PÃO
-                if "pão" in last_ai_msg or "pao" in last_ai_msg:
-                    if "hot dog" in mensagem_lower or "hotdog" in mensagem_lower:
-                        search_term = "pao hot dog"
-                    elif "hamburguer" in mensagem_lower or "hamburger" in mensagem_lower or "hambúrguer" in mensagem_lower:
-                        search_term = "pao hamburguer"
+                # 1. Tentar identificar um tópico na pergunta da Ana para "deslizar"
+                for topico, prefixo in TOPICOS_CONTEXTO.items():
+                    if topico in last_ai_msg:
+                        prefixo_contexto = prefixo
+                        break
                 
-                # Outros mapeamentos genéricos se o contexto não for específico
+                # 2. Se achou um tópico e a resposta do cliente é curta, fundir (Sliding Window)
+                if prefixo_contexto and len(mensagem_lower.split()) <= 3:
+                    # Evitar duplicar (ex: Ana diz "pão", cliente diz "pão hot dog")
+                    if prefixo_contexto not in mensagem_lower:
+                        search_term = f"{prefixo_contexto} {mensagem_lower}"
+                    else:
+                        search_term = mensagem_lower
+                
+                # 3. Se não tem contexto deslizante, usar o mapeamento genérico
                 if not search_term:
                     GENERIC_MAPPINGS = {
                         "hot dog": "pao hot dog",
@@ -739,9 +764,9 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
                         "garrafa": "cerveja garrafa 600ml"
                     }
                     search_term = GENERIC_MAPPINGS.get(mensagem_lower)
-                
-                if search_term and len(mensagem_lower) < 25:
-                    logger.info(f"🔄 Fallback contextual: '{mensagem_lower}' (Contexto: '{last_ai_msg[:30]}...') → buscando '{search_term}'")
+
+                if search_term and len(mensagem_lower) < 30:
+                    logger.info(f"🔄 Fallback DESLIZANTE: '{mensagem_lower}' + Contexto '{prefixo_contexto}' → buscando '{search_term}'")
                     try:
                         from tools.http_tools import estoque_preco
                         from tools.db_vector_search import search_products_vector
@@ -763,8 +788,8 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
                             preco_match = re.search(r'R\$\s*([\d,.]+)', preco_result)
                             if preco_match:
                                 preco = preco_match.group(0)
-                                output = f"O {nome.split()[0]} de {search_term.replace('pao ', '')} está {preco}. Adiciono ao carrinho?"
-                                logger.info(f"✅ Fallback contextual sucesso: {output}")
+                                output = f"O {nome.split()[0]} de {mensagem_lower} está {preco}. Adiciono ao carrinho?"
+                                logger.info(f"✅ Fallback deslizante sucesso: {output}")
                             else:
                                 output = f"Encontrei {nome}. Quer que eu adicione ao carrinho?"
                         else:
