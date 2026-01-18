@@ -144,8 +144,7 @@ def search_products_vector(query: str, limit: int = 20) -> str:
         # Pães de Pacote / Industrializados
         "pao de saco": "pao de forma",
         "pão de saco": "pao de forma",
-        "pacote de pao": "pao de forma",
-        "pacote de pão": "pao de forma",
+        # "pacote de pao" REMOVIDO - cliente quer hot dog ou hamburguer, agente deve perguntar
         "pao para hamburguer": "pao hamburguer",
         "pao de hamburguer": "pao hamburguer",
         "pao para hot dog": "pao hot dog",
