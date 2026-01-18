@@ -2,11 +2,8 @@ import os
 import psycopg2
 from pathlib import Path
 
-# Use the vector DB connection string from env or fallback
-CONN_STR = os.environ.get(
-    "VECTOR_DB_CONNECTION_STRING",
-    "postgres://poostgres:85885885@31.97.252.6:8877/agente-db-pgvectorstore?sslmode=disable"
-)
+# Use the vector DB connection    # Try to load from .env file manually if needed, or use the one seen in settings.py
+CONN_STR = "postgres://postgres:Theo2023...@31.97.252.6:2022/projeto_queiroz?sslmode=disable"
 
 def apply_migration():
     print("🚀 Applying database migration...")
