@@ -401,6 +401,17 @@ def _extract_ean_and_name(result: dict) -> tuple[str, str]:
         nome_match = re.search(r'"produto":\s*"([^"]+)"', text)
         if nome_match:
             nome = nome_match.group(1)
+            
+    # Fallback 2: O texto está no formato cru "ean 12345 NOME DO PRODUTO..."
+    if not ean:
+        import re
+        # Procura por "ean 12345" (case insensitive)
+        raw_match = re.search(r'ean\s+(\d+)\s+(.*)', text, re.IGNORECASE)
+        if raw_match:
+            ean = raw_match.group(1)
+            # Se não tiver nome ainda, usa o resto da string
+            if not nome:
+                nome = raw_match.group(2).strip()
     
     # Fallback: usar o texto inteiro como nome
     if not nome and text:
