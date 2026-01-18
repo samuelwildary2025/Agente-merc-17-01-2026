@@ -1,3 +1,18 @@
+-- Habilitar a extensão pgvector
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Criar tabela de vetores se não existir
+CREATE TABLE IF NOT EXISTS produtos_vectors_ean (
+    id SERIAL PRIMARY KEY,
+    text TEXT,
+    embedding VECTOR(1536),
+    metadata JSONB
+);
+
+-- Criar índices para performance
+CREATE INDEX IF NOT EXISTS idx_produtos_vectors_ean_embedding ON produtos_vectors_ean USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+CREATE INDEX IF NOT EXISTS idx_produtos_vectors_ean_metadata ON produtos_vectors_ean USING gin (metadata);
+
 -- Função de busca híbrida (Texto + Vetor) com RRF (Reciprocal Rank Fusion)
 -- V2: Adiciona suporte a boost por categoria
 CREATE OR REPLACE FUNCTION hybrid_search_v2(
