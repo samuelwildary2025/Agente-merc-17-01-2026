@@ -4,16 +4,18 @@ import logging
 import psycopg2
 from pathlib import Path
 
+# Add parent directory to path to import settings
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
+from config.settings import settings
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Hardcoded from settings.py default to avoid Pydantic validation errors locally
-VECTOR_DB_CONNECTION_STRING = "postgres://poostgres:85885885@31.97.252.6:8877/agente-db-pgvectorstore?sslmode=disable"
-
 def fix_vector_db():
-    conn_str = VECTOR_DB_CONNECTION_STRING
+    conn_str = settings.vector_db_connection_string
     if not conn_str:
-        logger.error("❌ vector_db_connection_string not set!")
+        logger.error("❌ vector_db_connection_string not set in settings!")
         return
 
     logger.info(f"🔌 Connecting to vector database...")
@@ -21,6 +23,8 @@ def fix_vector_db():
     # SQL to create the function
     # Note: RRF (Reciprocal Rank Fusion) implementation
     sql = """
+    DROP FUNCTION IF EXISTS hybrid_search_v2(text,vector,integer,double precision,double precision,double precision,integer);
+
     CREATE OR REPLACE FUNCTION hybrid_search_v2(
         query_text text,
         query_embedding vector(1536),
