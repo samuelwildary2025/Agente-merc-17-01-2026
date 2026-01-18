@@ -35,6 +35,9 @@ class LimitedPostgresChatMessageHistory(BaseChatMessageHistory):
         self.table_name = table_name
         self.max_messages = max_messages
         
+        # Garantir que a tabela tenha as colunas necessárias (Auto-fix)
+        self._ensure_schema()
+        
         # Mantemos a instância base apenas para leitura (se necessário)
         # mas faremos a escrita manualmente para garantir o commit
         try:
@@ -47,6 +50,33 @@ class LimitedPostgresChatMessageHistory(BaseChatMessageHistory):
         except Exception as e:
             logger.warning(f"Erro ao iniciar PostgresChatMessageHistory padrão: {e}")
             self._postgres_history = None
+    
+    def _ensure_schema(self) -> None:
+        """
+        Verifica se a tabela tem a coluna created_at e a cria se necessário.
+        Isso corrige o erro de 'column created_at does not exist'.
+        """
+        try:
+            # Usar conexão passageira para verificar schema
+            with psycopg2.connect(self.connection_string) as conn:
+                with conn.cursor() as cursor:
+                    # Adicionar coluna created_at se não existir
+                    cursor.execute(f"""
+                        ALTER TABLE {self.table_name} 
+                        ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+                    """)
+                    
+                    # Opcional: Index para performance
+                    cursor.execute(f"""
+                        CREATE INDEX IF NOT EXISTS idx_created_at 
+                        ON {self.table_name}(created_at);
+                    """)
+                    
+                    conn.commit()
+                    logger.info(f"✅ Schema verificado: coluna 'created_at' garantida na tabela '{self.table_name}'.")
+                    
+        except Exception as e:
+            logger.error(f"⚠️ Erro ao verificar schema (pode ser ignorado se o banco estiver inacessível no init): {e}")
     
     @property
     def messages(self) -> List[BaseMessage]:
