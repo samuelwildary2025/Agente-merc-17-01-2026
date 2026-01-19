@@ -570,13 +570,16 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
             # Log de tokens
             logger.info(f"📊 TOKENS - Prompt: {cb.prompt_tokens} | Completion: {cb.completion_tokens} | Total: {cb.total_tokens}")
             logger.info(f"💰 CUSTO: ${total_cost:.6f} USD (Input: ${input_cost:.6f} | Output: ${output_cost:.6f})")
+            
+            # CRITICAL: Detectar quando LLM não gera resposta
+            llm_generated_nothing = cb.completion_tokens == 0
         
         # 4. Extrair resposta (com fallback para Gemini empty responses)
         output = ""
         if isinstance(result, dict) and "messages" in result:
             messages = result["messages"]
             logger.debug(f"📨 Total de mensagens no resultado: {len(messages) if messages else 0}")
-            if messages:
+            if messages and not llm_generated_nothing:  # ✅ Só busca mensagens se LLM gerou algo
                 # Log das últimas mensagens para debug
                 for i, msg in enumerate(messages[-5:]):
                     msg_type = type(msg).__name__
@@ -610,15 +613,20 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
         
         # Fallback se ainda estiver vazio
         if not output or not output.strip():
-            # Logar o que foi rejeitado para debug
-            if isinstance(result, dict) and "messages" in result:
-                last_ai = None
-                for msg in reversed(result["messages"]):
-                    if isinstance(msg, AIMessage):
-                        last_ai = msg
-                        break
-                if last_ai:
-                    logger.warning(f"⚠️ Última AIMessage rejeitada: content='{str(last_ai.content)[:200]}' tool_calls={getattr(last_ai, 'tool_calls', None)}")
+            # CRITICAL: Se LLM não gerou nada (0 completion tokens), retornar erro
+            if llm_generated_nothing:
+                logger.error("❌ LLM retornou 0 completion tokens - modelo pode estar sobrecarregado ou com problema")
+                output = "Desculpe, tive um problema ao processar. Pode repetir por favor?"
+            else:
+                # Logar o que foi rejeitado para debug
+                if isinstance(result, dict) and "messages" in result:
+                    last_ai = None
+                    for msg in reversed(result["messages"]):
+                        if isinstance(msg, AIMessage):
+                            last_ai = msg
+                            break
+                    if last_ai:
+                        logger.warning(f"⚠️ Última AIMessage rejeitada: content='{str(last_ai.content)[:200]}' tool_calls={getattr(last_ai, 'tool_calls', None)}")
             
             # FALLBACK INTELIGENTE: Analisa as mensagens de tool para gerar resposta útil
             tool_results = []
