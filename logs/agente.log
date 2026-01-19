@@ -128,3 +128,21 @@
 {"asctime": "2025-12-14 03:09:05", "name": "tools.http_tools", "levelname": "INFO", "message": "Tamanho da resposta ean_lookup: 100 caracteres", "taskName": null}
 {"asctime": "2025-12-14 03:09:05", "name": "tools.http_tools", "levelname": "INFO", "message": "Consultando estoque_preco por EAN: http://45.178.95.233:5001/api/Produto/GetProdutosEAN/7896006716112", "taskName": null}
 {"asctime": "2025-12-14 03:09:05", "name": "tools.http_tools", "levelname": "INFO", "message": "EAN 7896006716112: 1 item(s) dispon\u00edveis ap\u00f3s filtragem", "taskName": null}
+{"asctime": "2026-01-18 13:41:30", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'cafe'"}
+{"asctime": "2026-01-18 13:41:32", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'cafe' \u2192 'cafe'"}
+{"asctime": "2026-01-18 13:41:32", "name": "tools.db_vector_search", "levelname": "ERROR", "message": "\u274c Erro na busca vetorial: function hybrid_search_v2(unknown, vector, integer, numeric, numeric, numeric, integer) is not unique\nLINE 7:                     FROM hybrid_search_v2(\n                                 ^\nHINT:  Could not choose a best candidate function. You might need to add explicit type casts.\n"}
+{"asctime": "2026-01-18 13:42:19", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'cafe'"}
+{"asctime": "2026-01-18 13:42:20", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'cafe' \u2192 'cafe'"}
+{"asctime": "2026-01-18 13:42:21", "name": "tools.db_vector_search", "levelname": "ERROR", "message": "\u274c Erro na busca vetorial: function hybrid_search_v2(unknown, vector, integer, numeric, numeric, numeric, integer) is not unique\nLINE 7:                     FROM hybrid_search_v2(\n                                 ^\nHINT:  Could not choose a best candidate function. You might need to add explicit type casts.\n"}
+{"asctime": "2026-01-18 13:42:58", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'cafe'"}
+{"asctime": "2026-01-18 13:42:59", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'cafe' \u2192 'cafe'"}
+{"asctime": "2026-01-18 13:43:00", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 20 resultados"}
+{"asctime": "2026-01-18 13:43:00", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a0\ufe0f [RETRY] Score baixo (0.037), tentando busca por palavras individuais"}
+{"asctime": "2026-01-18 13:43:01", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 20 resultados com FlashRank..."}
+{"asctime": "2026-01-18 13:43:02", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 0.412 -> Novo: 0.986"}
+{"asctime": "2026-01-18 13:49:54", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'cafe'"}
+{"asctime": "2026-01-18 13:49:55", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'cafe' \u2192 'cafe'"}
+{"asctime": "2026-01-18 13:49:56", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 20 resultados"}
+{"asctime": "2026-01-18 13:49:56", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a0\ufe0f [RETRY] Score baixo (0.037), tentando busca por palavras individuais"}
+{"asctime": "2026-01-18 13:49:56", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 20 resultados com FlashRank..."}
+{"asctime": "2026-01-18 13:49:57", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 0.412 -> Novo: 0.986"}

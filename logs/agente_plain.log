@@ -128,3 +128,29 @@
 2025-12-14 03:09:05 - tools.http_tools - INFO - Tamanho da resposta ean_lookup: 100 caracteres
 2025-12-14 03:09:05 - tools.http_tools - INFO - Consultando estoque_preco por EAN: http://45.178.95.233:5001/api/Produto/GetProdutosEAN/7896006716112
 2025-12-14 03:09:05 - tools.http_tools - INFO - EAN 7896006716112: 1 item(s) disponíveis após filtragem
+2026-01-18 13:41:30 - tools.db_vector_search - INFO - 🔍 [VECTOR SEARCH] Buscando: 'cafe'
+2026-01-18 13:41:32 - tools.db_vector_search - INFO - 🔀 [HYBRID SEARCH] Query: 'cafe' → 'cafe'
+2026-01-18 13:41:32 - tools.db_vector_search - ERROR - ❌ Erro na busca vetorial: function hybrid_search_v2(unknown, vector, integer, numeric, numeric, numeric, integer) is not unique
+LINE 7:                     FROM hybrid_search_v2(
+                                 ^
+HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+
+2026-01-18 13:42:19 - tools.db_vector_search - INFO - 🔍 [VECTOR SEARCH] Buscando: 'cafe'
+2026-01-18 13:42:20 - tools.db_vector_search - INFO - 🔀 [HYBRID SEARCH] Query: 'cafe' → 'cafe'
+2026-01-18 13:42:21 - tools.db_vector_search - ERROR - ❌ Erro na busca vetorial: function hybrid_search_v2(unknown, vector, integer, numeric, numeric, numeric, integer) is not unique
+LINE 7:                     FROM hybrid_search_v2(
+                                 ^
+HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+
+2026-01-18 13:42:58 - tools.db_vector_search - INFO - 🔍 [VECTOR SEARCH] Buscando: 'cafe'
+2026-01-18 13:42:59 - tools.db_vector_search - INFO - 🔀 [HYBRID SEARCH] Query: 'cafe' → 'cafe'
+2026-01-18 13:43:00 - tools.db_vector_search - INFO - 🔍 [VECTOR SEARCH] Encontrados 20 resultados
+2026-01-18 13:43:00 - tools.db_vector_search - INFO - ⚠️ [RETRY] Score baixo (0.037), tentando busca por palavras individuais
+2026-01-18 13:43:01 - tools.db_vector_search - INFO - ⚡ [RERANK] Reordenando 20 resultados com FlashRank...
+2026-01-18 13:43:02 - tools.db_vector_search - INFO - ✅ [RERANK] Reordenação concluída. Top 1 antigo score: 0.412 -> Novo: 0.986
+2026-01-18 13:49:54 - tools.db_vector_search - INFO - 🔍 [VECTOR SEARCH] Buscando: 'cafe'
+2026-01-18 13:49:55 - tools.db_vector_search - INFO - 🔀 [HYBRID SEARCH] Query: 'cafe' → 'cafe'
+2026-01-18 13:49:56 - tools.db_vector_search - INFO - 🔍 [VECTOR SEARCH] Encontrados 20 resultados
+2026-01-18 13:49:56 - tools.db_vector_search - INFO - ⚠️ [RETRY] Score baixo (0.037), tentando busca por palavras individuais
+2026-01-18 13:49:56 - tools.db_vector_search - INFO - ⚡ [RERANK] Reordenando 20 resultados com FlashRank...
+2026-01-18 13:49:57 - tools.db_vector_search - INFO - ✅ [RERANK] Reordenação concluída. Top 1 antigo score: 0.412 -> Novo: 0.986
