@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     postgres_message_limit: int = 8
     
     # Banco Vetorial de Produtos (Postgres - pgvector)
-    vector_db_connection_string: Optional[str] = "postgres://poostgres:85885885@31.97.252.6:8877/agente-db-pgvectorstore?sslmode=disable"
+    vector_db_connection_string: Optional[str] = "postgres://postgres:Theo2023...@31.97.252.6:2022/projeto_queiroz?sslmode=disable"
     
     # Redis
     redis_host: str = "localhost"
