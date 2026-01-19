@@ -470,6 +470,23 @@ def busca_lote_produtos(produtos: list[str]) -> str:
     start_time = time.time()
     logger.info(f"🚀 Iniciando busca em lote para {len(produtos)} produtos")
     
+    # Pesos médios para produtos vendidos por kg (para calcular preço estimado)
+    PESO_UNITARIO = {
+        # Padaria
+        "pao frances": 0.050, "pão francês": 0.050, "carioquinha": 0.050, "pao carioquinha": 0.050,
+        "pao sovado": 0.060, "pão sovado": 0.060, "massa fina": 0.060,
+        "mini bolinha": 0.016, "mini coxinha": 0.016,
+        # Hortfruti - Legumes
+        "tomate": 0.150, "cebola": 0.150, "batata": 0.150,
+        "cenoura": 0.100, "pepino": 0.200, "pimentao": 0.150, "pimentão": 0.150,
+        # Carnes e Embutidos
+        "frango inteiro": 2.200, "frango abatido": 2.200,
+        "calabresa": 0.250, "paio": 0.250, "linguica": 0.250, "linguiça": 0.250, "bacon": 0.300,
+        # Frutas
+        "limao": 0.100, "limão": 0.100, "banana": 0.100, "maca": 0.100, "maçã": 0.100,
+        "laranja": 0.200, "mamao": 1.500, "mamão": 1.500, "melancia": 2.000, "abacate": 0.600
+    }
+    
     # Mapeamento direto de produtos conhecidos que a busca vetorial não encontra bem
     # Formato: termo_busca → (ean, nome_produto)
     PRODUTOS_CONHECIDOS = {
@@ -505,9 +522,20 @@ def busca_lote_produtos(produtos: list[str]) -> str:
     }
     
     def buscar_produto_completo(produto: str) -> dict:
-        """Busca EAN e depois preço de um produto"""
+        """Busca EAN e depois preço de um produto (pode incluir quantidade: '5 tomates')"""
         try:
-            produto_lower = produto.lower().strip()
+            import re
+            
+            # Extrair quantidade da string (ex: "5 tomates" → quantidade=5, produto="tomates")
+            produto_limpo = produto.strip()
+            quantidade = None
+            match = re.match(r'^([\d]+)\s+(.+)$', produto_limpo)
+            if match:
+                quantidade = int(match.group(1))
+                produto_limpo = match.group(2)
+                logger.info(f"📊 Quantidade detectada: {quantidade}x {produto_limpo}")
+            
+            produto_lower = produto_limpo.lower().strip()
             
             # 0. SHORTCUT: Verificar se é um produto conhecido
             if produto_lower in PRODUTOS_CONHECIDOS:
@@ -520,7 +548,7 @@ def busca_lote_produtos(produtos: list[str]) -> str:
                         item = preco_data[0]
                         preco = item.get("preco", 0)
                         logger.info(f"✅ [SHORTCUT] Sucesso: {nome} (R$ {preco})")
-                        return {"produto": nome, "erro": None, "preco": preco, "ean": ean}
+                        return {"produto": nome, "erro": None, "preco": preco, "ean": ean, "quantidade": quantidade}
                 except Exception as e:
                     logger.warning(f"⚠️ [SHORTCUT] Erro ao consultar preço: {e}")
             
@@ -643,7 +671,7 @@ def busca_lote_produtos(produtos: list[str]) -> str:
                         nome = item.get("produto", item.get("nome", produto))
                         preco = item.get("preco", 0)
                         logger.info(f"✅ [BUSCA LOTE] Sucesso com '{nome}' (R$ {preco})")
-                        return {"produto": nome, "erro": None, "preco": preco, "ean": ean}
+                        return {"produto": nome, "erro": None, "preco": preco, "ean": ean, "quantidade": quantidade}
                     else:
                         logger.info(f"⚠️ [BUSCA LOTE] '{nome_candidato}' sem estoque/preço. Tentando próximo...")
                 except Exception as e:
@@ -668,13 +696,40 @@ def busca_lote_produtos(produtos: list[str]) -> str:
     elapsed = time.time() - start_time
     logger.info(f"✅ Busca em lote concluída em {elapsed:.2f}s para {len(produtos)} produtos")
     
-    # Formatar resposta
+    # Formatar resposta (com cálculo de preço estimado para produtos de peso)
     encontrados = []
     nao_encontrados = []
     
     for r in resultados:
         if r["preco"] is not None:
-            encontrados.append(f"• {r['produto']} - R${r['preco']:.2f}")
+            nome = r['produto']
+            preco_kg = r['preco']
+            quantidade = r.get('quantidade')
+            
+            # Verificar se é produto vendido por peso (kg) e se tem quantidade
+            if quantidade and quantidade > 0:
+                # Tentar encontrar peso unitário para este produto
+                nome_lower = nome.lower()
+                peso_unit = None
+                
+                for chave, peso in PESO_UNITARIO.items():
+                    if chave in nome_lower:
+                        peso_unit = peso
+                        break
+                
+                # Se encontrou peso, calcular preço estimado
+                if peso_unit:
+                    peso_total = quantidade * peso_unit
+                    preco_estimado = peso_total * preco_kg
+                    # Formato: "5 Tomates (~750g) - R$ 4,12"
+                    encontrados.append(f"• {quantidade} {nome.replace(' kg', '').replace(' KG', '')} (~{int(peso_total*1000)}g) - R$ {preco_estimado:.2f}")
+                    logger.info(f"💰 Cálculo: {quantidade}x {nome} × {peso_unit}kg × R${preco_kg:.2f}/kg = R${preco_estimado:.2f}")
+                else:
+                    # Produto de peso mas sem regra de peso unitário - mostrar só quantidade
+                    encontrados.append(f"• {quantidade}x {nome} - R$ {preco_kg:.2f}/kg")
+            else:
+                # Produto unitário normal ou sem quantidade especificada
+                encontrados.append(f"• {nome} - R$ {preco_kg:.2f}")
         else:
             nao_encontrados.append(r['produto'])
     
