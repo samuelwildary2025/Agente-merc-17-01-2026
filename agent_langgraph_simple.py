@@ -577,7 +577,7 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
         max_retries = 2
         llm_generated_nothing = True
         result = None
-        fallback_model = "gemini-2.0-flash"
+        fallback_model = "gemini-2.5-flash"
         
         for attempt in range(max_retries + 1):
             # Na segunda tentativa, usar modelo de fallback
