@@ -430,7 +430,7 @@ ACTIVE_TOOLS = [
 
 def load_system_prompt() -> str:
     base_dir = Path(__file__).resolve().parent
-    prompt_path = str((base_dir / "prompts" / "agent_system_optimized.md"))
+    prompt_path = str((base_dir / "prompts" / "agent_system_compact.md"))
     try:
         text = Path(prompt_path).read_text(encoding="utf-8")
         text = text.replace("{base_url}", settings.supermercado_base_url)
