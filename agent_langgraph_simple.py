@@ -523,12 +523,35 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
         # Se há URL de imagem, injetar no contexto para o agente poder usar em salvar_comprovante_tool
         if image_url:
             contexto += f"[URL_IMAGEM: {image_url}]\n"
+        
+        # EXPANSÃO DE MENSAGENS CURTAS para ajudar o Gemini
+        # Mensagens como "sim", "não", "ok" sozinhas confundem o modelo
+        mensagem_expandida = clean_message
+        msg_lower = clean_message.lower().strip()
+        
+        if msg_lower in ["sim", "s", "ok", "pode", "isso", "quero", "beleza", "blz", "bora", "vamos"]:
+            # Buscar última mensagem da IA no histórico para dar contexto
+            ultima_pergunta_ia = ""
+            for msg in reversed(previous_messages):
+                if isinstance(msg, AIMessage) and msg.content:
+                    content = msg.content if isinstance(msg.content, str) else str(msg.content)
+                    if content.strip() and not content.startswith("["):
+                        ultima_pergunta_ia = content[:200]
+                        break
+            
+            if ultima_pergunta_ia:
+                mensagem_expandida = f"O cliente respondeu '{clean_message}' à sua pergunta anterior: \"{ultima_pergunta_ia}...\". Execute a ação apropriada."
+                logger.info(f"🔄 Mensagem curta expandida: '{clean_message}' → contexto adicionado")
+        elif msg_lower in ["nao", "não", "n", "nope", "nao quero", "não quero"]:
+            mensagem_expandida = f"O cliente respondeu '{clean_message}' (NEGATIVO). Pergunte se precisa de mais alguma coisa."
+            logger.info(f"🔄 Mensagem curta expandida (negativo): '{clean_message}'")
+        
         contexto += "\n"
         
         if image_url:
             # Formato multimodal para GPT-4o / GPT-4o-mini
             message_content = [
-                {"type": "text", "text": contexto + clean_message},
+                {"type": "text", "text": contexto + mensagem_expandida},
                 {
                     "type": "image_url",
                     "image_url": {"url": image_url}
@@ -536,7 +559,7 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
             ]
             current_message = HumanMessage(content=message_content)
         else:
-            current_message = HumanMessage(content=contexto + clean_message)
+            current_message = HumanMessage(content=contexto + mensagem_expandida)
 
         # 4. Montar estado inicial COM histórico de mensagens anteriores
         # Isso permite que o LLM tenha contexto da conversa
