@@ -514,6 +514,9 @@ def busca_lote_produtos(produtos: list[str]) -> str:
         "arroz branco": ("7898236717129", "ARROZ BRANCO 101 1kg"),
         "arroz tipo 1": ("7898236717129", "ARROZ BRANCO 101 1kg"),
         "arroz parboilizado": ("7898236717167", "ARROZ PARBOILIZADO 101 1KG"),
+        # Frutas Hortifruti
+        "laranja": ("126", "LARANJA LIMA kg"),
+        "laranjas": ("126", "LARANJA LIMA kg"),
         # Refrigerantes
         "coca-cola 2l": ("7894900027013", "REFRIG COCA COLA PET 2L"),
         "coca-cola 2 litros": ("7894900027013", "REFRIG COCA COLA PET 2L"),
