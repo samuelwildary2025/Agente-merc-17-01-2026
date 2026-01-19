@@ -74,10 +74,32 @@ class WhatsAppAPI:
         """
         Envia mensagem de texto simples
         POST /message/text
+        Suporta o delimitador <BREAK> para enviar múltiplas mensagens sequenciais.
         """
         if not self.base_url: 
             logger.error("❌ WHATSAPP_API_BASE_URL não configurado! Mensagem NÃO enviada.")
             return False
+            
+        # Verifica se há o delimitador de quebra
+        if "<BREAK>" in text:
+            parts = text.split("<BREAK>")
+            logger.info(f"🔄 Mensagem multi-parte detectada! Dividindo em {len(parts)} mensagens.")
+            
+            success_all = True
+            import time
+            
+            for index, part in enumerate(parts):
+                part = part.strip()
+                if not part: continue
+                
+                # Pequeno delay entre mensagens (exceto a primeira)
+                if index > 0:
+                    time.sleep(1.5)
+                    
+                if not self.send_text(to, part):
+                    success_all = False
+            
+            return success_all
         
         url = f"{self.base_url}/message/text"
         
@@ -92,21 +114,22 @@ class WhatsAppAPI:
         }
         
         logger.info(f"📤 Enviando mensagem para {jid}: {text[:50]}...")
-        logger.info(f"📤 URL: {url}")
+        # logger.info(f"📤 URL: {url}")
         
         try:
             resp = requests.post(url, headers=self._get_headers(), json=payload, timeout=10)
             
             # Log da resposta COMPLETA
-            logger.info(f"📥 Resposta API WhatsApp: Status={resp.status_code}")
-            logger.info(f"📥 Resposta Body: {resp.text[:500]}")
+            # logger.info(f"📥 Resposta API WhatsApp: Status={resp.status_code}")
+            # logger.info(f"📥 Resposta Body: {resp.text[:500]}")
             
             if resp.status_code != 200:
                 logger.error(f"❌ Erro API WhatsApp ({resp.status_code}): {resp.text[:500]}")
+                return False
             else:
                 logger.info(f"✅ Mensagem enviada com sucesso para {to}")
                 
-            resp.raise_for_status()
+            # resp.raise_for_status() # Removido para evitar exceção duplicada
             return True
         except requests.exceptions.HTTPError as e:
             logger.error(f"❌ Erro HTTP ao enviar mensagem para {to}: {e}")
