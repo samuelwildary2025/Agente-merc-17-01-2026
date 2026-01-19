@@ -436,8 +436,8 @@ def load_system_prompt() -> str:
         logger.error(f"Falha ao carregar prompt: {e}")
         raise
 
-def _build_llm():
-    model = getattr(settings, "llm_model", "gemini-2.5-flash")
+def _build_llm(model_override: str = None):
+    model = model_override or getattr(settings, "llm_model", "gemini-2.5-flash")
     temp = float(getattr(settings, "llm_temperature", 0.0))
     provider = getattr(settings, "llm_provider", "google")
     
@@ -457,21 +457,21 @@ def _build_llm():
             temperature=temp
         )
 
-def create_agent_with_history():
+def create_agent_with_history(model_override: str = None):
     system_prompt = load_system_prompt()
-    llm = _build_llm()
+    llm = _build_llm(model_override)
     memory = MemorySaver()
     agent = create_react_agent(llm, ACTIVE_TOOLS, prompt=system_prompt, checkpointer=memory)
     return agent
 
 _agent_graph = None
-def get_agent_graph():
+def get_agent_graph(model_override: str = None):
     # Removido cache global para permitir hot-reload do prompt
     # global _agent_graph
     # if _agent_graph is None:
     #     _agent_graph = create_agent_with_history()
     # return _agent_graph
-    return create_agent_with_history()
+    return create_agent_with_history(model_override)
 
 # ============================================
 # Função Principal
@@ -569,16 +569,19 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
         
         config = {"configurable": {"thread_id": telefone}, "recursion_limit": 100}
         
-        # RETRY AUTOMÁTICO para quando Gemini retorna vazio
+        # RETRY AUTOMÁTICO com FALLBACK para Gemini 2.0 Flash
         max_retries = 2
         llm_generated_nothing = True
         result = None
+        fallback_model = "gemini-2.0-flash"
         
         for attempt in range(max_retries + 1):
+            # Na segunda tentativa, usar modelo de fallback
             if attempt > 0:
-                logger.warning(f"🔄 Tentativa {attempt + 1}/{max_retries + 1} - Gemini retornou vazio, tentando novamente...")
+                logger.warning(f"🔄 Tentativa {attempt + 1}/{max_retries + 1} - Tentando com {fallback_model}...")
                 import time
-                time.sleep(0.5)  # Pequeno delay entre tentativas
+                time.sleep(0.3)  # Pequeno delay entre tentativas
+                agent = get_agent_graph(model_override=fallback_model)
             
             logger.info("Executando agente...")
             
