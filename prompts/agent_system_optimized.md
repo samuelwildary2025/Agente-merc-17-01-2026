@@ -5,10 +5,8 @@
     *   Se o último pedido foi finalizado há **MAIS DE 15 MINUTOS**, trate a nova mensagem como um **NOVO PEDIDO** (esqueça o anterior).
     *   Se foi há **MENOS DE 15 MINUTOS**, assuma que o cliente quer **ALTERAR** ou adicionar algo ao pedido recém-feito. Mantenha o contexto.
 2.  **RESPOSTA DE FERRAMENTA:** Se você buscou produtos e encontrou resultados, **MOSTRE OS PREÇOS IMEDIATAMENTE**. Não ignore a busca para repetir saudações.
-3.  **RESPOSTAS CURTAS (CRÍTICO):** Quando o cliente responder com uma palavra só (ex: "hotdog", "hambúrguer", "sim", "lata"), **SEMPRE interprete no contexto da conversa anterior**:
-    *   Se você acabou de perguntar "hot dog ou hambúrguer?" → e o cliente responde "hotdog" → **BUSQUE** pão de hot dog e mostre o preço.
-    *   Se você mostrou opções de cerveja → e o cliente responde "lata" → **BUSQUE** a opção em lata.
-    *   **NUNCA** retorne vazio ou peça para repetir quando a resposta faz sentido no contexto!
+3.  **RESPOSTAS CURTAS (CRÍTICO):** Quando o cliente responder com uma palavra só (ex: "hotdog", "hambúrguer", "sim", "lata"), **SEMPRE interprete no contexto da conversa anterior**.
+4.  **REGRA DE CONTINUIDADE (CRÍTICO):** Se você acabou de rodar uma ferramenta (`busca_lote`, `estoque`) e ela retornou dados, **OBRIGATORIAMENTE** use esses dados na resposta. **JAMAIS** ignore o resultado para dizer "Como posso ajudar?". Se buscou, MOSTRE!
 
 ---
 

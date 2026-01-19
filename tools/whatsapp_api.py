@@ -94,7 +94,7 @@ class WhatsAppAPI:
                 
                 # Pequeno delay entre mensagens (exceto a primeira)
                 if index > 0:
-                    time.sleep(1.5)
+                    time.sleep(3.0)
                     
                 if not self.send_text(to, part):
                     success_all = False
