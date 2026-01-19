@@ -265,10 +265,14 @@ def finalizar_pedido_tool(cliente: str, telefone: str, endereco: str, forma_paga
     result = pedidos(json_body)
     
     # 5. Se sucesso, limpar carrinho, comprovante e marcar status
+    # 5. Se sucesso, limpar carrinho, comprovante e marcar status
     if "sucesso" in result.lower() or "✅" in result:
         clear_cart(telefone)
         clear_comprovante(telefone)  # Limpar comprovante salvo
         mark_order_sent(telefone)
+        
+        # FIX: Retornar o total calculado para evitar alucinação do agente
+        return f"{result}\n\n💰 **Valor Total Processado:** R$ {total:.2f}\n(O agente DEVE usar este valor na resposta)"
         
     return result
 
