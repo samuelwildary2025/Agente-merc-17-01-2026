@@ -546,33 +546,44 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
         
         config = {"configurable": {"thread_id": telefone}, "recursion_limit": 100}
         
-        logger.info("Executando agente...")
+        # RETRY AUTOMÁTICO para quando Gemini retorna vazio
+        max_retries = 2
+        llm_generated_nothing = True
+        result = None
         
-        # Contador de tokens (nota: get_openai_callback pode não funcionar 100% com Gemini)
-        with get_openai_callback() as cb:
-            result = agent.invoke(initial_state, config)
+        for attempt in range(max_retries + 1):
+            if attempt > 0:
+                logger.warning(f"🔄 Tentativa {attempt + 1}/{max_retries + 1} - Gemini retornou vazio, tentando novamente...")
+                import time
+                time.sleep(0.5)  # Pequeno delay entre tentativas
             
-            # Cálculo de custo baseado no provider
-            provider = getattr(settings, "llm_provider", "google")
-            if provider == "google":
-                # Gemini 2.5 Flash-Lite pricing (atualizado 12/2024)
-                # Input: $0.10 per 1M tokens | Output: $0.40 per 1M tokens
-                input_cost = (cb.prompt_tokens / 1_000_000) * 0.10
-                output_cost = (cb.completion_tokens / 1_000_000) * 0.40
-            else:
-                # OpenAI gpt-4o-mini pricing
-                # Input: $0.15 per 1M tokens | Output: $0.60 per 1M tokens
-                input_cost = (cb.prompt_tokens / 1_000_000) * 0.15
-                output_cost = (cb.completion_tokens / 1_000_000) * 0.60
+            logger.info("Executando agente...")
             
-            total_cost = input_cost + output_cost
-            
-            # Log de tokens
-            logger.info(f"📊 TOKENS - Prompt: {cb.prompt_tokens} | Completion: {cb.completion_tokens} | Total: {cb.total_tokens}")
-            logger.info(f"💰 CUSTO: ${total_cost:.6f} USD (Input: ${input_cost:.6f} | Output: ${output_cost:.6f})")
-            
-            # CRITICAL: Detectar quando LLM não gera resposta
-            llm_generated_nothing = cb.completion_tokens == 0
+            # Contador de tokens
+            with get_openai_callback() as cb:
+                result = agent.invoke(initial_state, config)
+                
+                # Cálculo de custo baseado no provider
+                provider = getattr(settings, "llm_provider", "google")
+                if provider == "google":
+                    input_cost = (cb.prompt_tokens / 1_000_000) * 0.10
+                    output_cost = (cb.completion_tokens / 1_000_000) * 0.40
+                else:
+                    input_cost = (cb.prompt_tokens / 1_000_000) * 0.15
+                    output_cost = (cb.completion_tokens / 1_000_000) * 0.60
+                
+                total_cost = input_cost + output_cost
+                
+                logger.info(f"📊 TOKENS - Prompt: {cb.prompt_tokens} | Completion: {cb.completion_tokens} | Total: {cb.total_tokens}")
+                logger.info(f"💰 CUSTO: ${total_cost:.6f} USD (Input: ${input_cost:.6f} | Output: ${output_cost:.6f})")
+                
+                llm_generated_nothing = cb.completion_tokens == 0
+                
+                # Se gerou algo, sair do loop
+                if not llm_generated_nothing:
+                    if attempt > 0:
+                        logger.info(f"✅ Retry bem-sucedido na tentativa {attempt + 1}")
+                    break
         
         # 4. Extrair resposta (com fallback para Gemini empty responses)
         output = ""
