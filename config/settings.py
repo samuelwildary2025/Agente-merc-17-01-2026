@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     postgres_connection_string: str
     postgres_table_name: str = "memoria"
     postgres_products_table_name: str = "produtos-sp-queiroz"  # Nova variável para tabela de produtos
-    postgres_message_limit: int = 8
+    postgres_message_limit: int = 5
     
     # Banco Vetorial de Produtos (Postgres - pgvector)
     vector_db_connection_string: Optional[str] = "postgres://postgres:Theo2023...@31.97.252.6:2022/projeto_queiroz?sslmode=disable"
