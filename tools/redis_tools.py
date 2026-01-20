@@ -526,6 +526,23 @@ def add_item_to_cart(telefone: str, item_json: str) -> bool:
         client.expire(key, SESSION_TTL)
         refresh_session_ttl(telefone)
         
+        # --- AUTO-UPDATE para pedidos já enviados ---
+        # Se o pedido já foi enviado (status='sent'), qualquer adição deve ser propagada para a API imediatamente.
+        # Isso corrige o bug onde o agente diz "Adicionei" mas só adiciona no Redis e não na Dashboard.
+        if session and session.get("status") == "sent":
+            try:
+                from tools.http_tools import alterar
+                # Preparar payload no formato esperado por alterar()
+                # alterar() espera: '{"itens": [item1, item2]}'
+                payload_api = json.dumps({"itens": [new_item]}, ensure_ascii=False)
+                
+                logger.info(f"🚀 Pedido {session.get('order_id')} já enviado: Disparando alterar() automático para update remoto.")
+                alterar_result = alterar(telefone, payload_api)
+                logger.info(f"✅ Auto-update resultado: {alterar_result}")
+                
+            except Exception as ex_api:
+                logger.error(f"❌ Falha no auto-update do pedido enviado: {ex_api}")
+
         return True
     except Exception as e:
         logger.error(f"Erro ao adicionar item ao carrinho: {e}")
