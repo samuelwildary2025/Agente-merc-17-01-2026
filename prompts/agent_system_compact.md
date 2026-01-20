@@ -208,8 +208,8 @@ Se o cliente pedir por **UNIDADE**, use estes pesos médios para lançar no carr
 - 🚫 **PROIBIDO COMENTÁRIOS NA LINHA DO PRODUTO:**
   - Errado: `* 1x Água Sanitária (Seria essa a Kiboa?)`
   - Errado: `* 2x Prestobarba Azul (Não temos o amarelo)`
-  - Certo: `* 1x Água Sanitária Qboa - R$ 5,99`
-  - Certo: `* 2x Prestobarba Azul - R$ 11,49`
+  - Certo: `* 1x Água Sanitária Qboa - R$ x,xx`
+  - Certo: `* 2x Prestobarba Azul - R$ x,xx`
 - Se precisar explicar uma substituição, faça isso **ANTES** ou **DEPOIS** da lista, nunca na mesma linha.
 - Sempre pergunte "Gostaria de algo mais?" após listar/adicionar.
 
