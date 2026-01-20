@@ -566,11 +566,19 @@ def _build_llm(model_override: str = None):
             # convert_system_message_to_human=True,  # REMOVIDO: Gemini agora suporta system prompts nativamente
         )
     else:
-        logger.info(f"🚀 Usando OpenAI: {model}")
+        logger.info(f"🚀 Usando OpenAI (compatível): {model}")
+        
+        # Configuração para Grok/xAI ou outros providers compatíveis
+        client_kwargs = {}
+        if settings.openai_api_base:
+            client_kwargs["base_url"] = settings.openai_api_base
+            logger.info(f"   ↳ Custom Base URL: {settings.openai_api_base}")
+
         return ChatOpenAI(
             model=model,
-            openai_api_key=settings.openai_api_key,
-            temperature=temp
+            api_key=settings.openai_api_key,
+            temperature=temp,
+            **client_kwargs
         )
 
 def create_agent_with_history(model_override: str = None):
