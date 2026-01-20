@@ -565,16 +565,21 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
             current_message = HumanMessage(content=contexto + mensagem_expandida)
 
         # 4. Montar estado inicial COM histórico de mensagens anteriores
-        # Isso permite que o LLM tenha contexto da conversa
         all_messages = list(previous_messages) + [current_message]
         initial_state = {"messages": all_messages}
         logger.info(f"📨 Enviando {len(all_messages)} mensagens para o LLM (histórico + atual)")
         
-        # DEBUG: Logar conteúdo das mensagens para ver se o histórico está vazio
+        # --- MONITOR DE CONTEXTO ---
+        logger.warning("🔍 --- INSPEÇÃO DE CONTEXTO (DEBUG) ---")
         for i, m in enumerate(all_messages):
-            logger.debug(f"📜 Msg {i} ({type(m).__name__}): {str(m.content)[:100]}...")
+            msg_type = type(m).__name__
+            content_preview = str(m.content)[:100].replace('\n', ' ')
+            logger.warning(f"   [{i}] {msg_type}: {content_preview}...")
+        logger.warning("---------------------------------------")
+        # ---------------------------
         
         config = {"configurable": {"thread_id": telefone}, "recursion_limit": 100}
+
         
         # RETRY AUTOMÁTICO com FALLBACK para Gemini 2.0 Flash
         max_retries = 2
