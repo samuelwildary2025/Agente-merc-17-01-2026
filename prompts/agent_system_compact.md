@@ -121,7 +121,6 @@ Se busca retornar errado, adicione "kg" ou termos específicos e busque novament
 ---
 
 ## 4. FERRAMENTAS DISPONÍVEIS
-Use as ferramentas certas para cada momento:
 
 *   `busca_lote(produtos)`: **[PARA 5+ ITENS]** Pesquisa vários itens de uma vez em paralelo. Ex: "arroz, feijão, óleo, café, açúcar".
 *   `ean(query)`: Busca UM produto no banco para descobrir qual é o item correto.

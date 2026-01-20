@@ -607,7 +607,16 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
                 logger.info(f"📊 TOKENS - Prompt: {cb.prompt_tokens} | Completion: {cb.completion_tokens} | Total: {cb.total_tokens}")
                 logger.info(f"💰 CUSTO: ${total_cost:.6f} USD (Input: ${input_cost:.6f} | Output: ${output_cost:.6f})")
                 
-                llm_generated_nothing = cb.completion_tokens == 0
+                
+                # Check real para saber se o LLM gerou algo (Gemini as vezes retorna 0 tokens no callback mas gera resposta)
+                has_ai_response = False
+                if result and isinstance(result, dict) and "messages" in result:
+                    # Verifica se a última mensagem é do tipo AIMessage
+                    ms = result["messages"]
+                    if ms and isinstance(ms[-1], AIMessage):
+                        has_ai_response = True
+                
+                llm_generated_nothing = cb.completion_tokens == 0 and not has_ai_response
                 
                 # Se gerou algo, sair do loop
                 if not llm_generated_nothing:
@@ -715,9 +724,20 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
                         if match:
                             prod, preco = match.groups()
                             tool_results.append(f"sucesso:{prod}:{preco}")
+                    # Detectar SUCESSO GENÉRICO de qualquer tool (ex: add_item, finalizar_pedido)
+                    elif "✅" in content:
+                        tool_results.append(f"acao_sucesso:{content}")
             
             # Gerar resposta baseada nos resultados das tools
-            if any(r.startswith("sucesso:") for r in tool_results) or ("busca_lote_ok" in tool_results and precos_encontrados):
+            if any(r.startswith("acao_sucesso:") for r in tool_results):
+                # Prioridade: Retornar o sucesso da tool diretamente
+                for r in tool_results:
+                    if r.startswith("acao_sucesso:"):
+                        output = r.split(":", 1)[1]
+                        logger.info(f"🔄 Fallback: Recuperando sucesso da tool: {output[:50]}...")
+                        break
+
+            elif any(r.startswith("sucesso:") for r in tool_results) or ("busca_lote_ok" in tool_results and precos_encontrados):
                 # Extrair itens encontrados
                 itens_ok = []
                 if precos_encontrados:
