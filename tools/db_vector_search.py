@@ -46,7 +46,7 @@ def _get_openai_client() -> OpenAI:
         # (pois Grok não tem embeddings).
         # Solução: Cliente precisa fornecer chave separada.
         
-        _openai_client = OpenAI(api_key=api_key)
+        _openai_client = OpenAI(api_key=api_key, base_url="https://api.openai.com/v1")
     return _openai_client
 
 

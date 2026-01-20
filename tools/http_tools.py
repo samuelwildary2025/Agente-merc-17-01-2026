@@ -254,8 +254,52 @@ def alterar(telefone: str, json_body: str) -> str:
         error_msg = "Erro: O corpo da requisição não é um JSON válido."
         logger.error(error_msg)
         return error_msg
-    except Exception as e:
         error_msg = f"Erro ao atualizar pedido: {str(e)}"
+        logger.error(error_msg)
+        return error_msg
+
+
+def overwrite_order(telefone: str, json_body: str) -> str:
+    """
+    Sobrescreve o pedido existente com os dados fornecidos (PUT direto).
+    Usado quando o agente possui o estado completo do pedido (ex: via Redis).
+    
+    Args:
+        telefone: Telefone do cliente
+        json_body: JSON com "itens" completos.
+    """
+    # Remove caracteres não numéricos do telefone
+    telefone_limpo = "".join(filter(str.isdigit, telefone))
+    base_url = f"{settings.supermercado_base_url}/pedidos/telefone/{telefone_limpo}"
+    
+    logger.info(f"🔄 Sobrescrevendo pedido para telefone: {telefone_limpo} (Full Sync)")
+    
+    try:
+        # Validar JSON
+        data = json.loads(json_body)
+        
+        # ENVIAR ATUALIZAÇÃO (PUT)
+        response = requests.put(
+            base_url,
+            headers=get_auth_headers(),
+            json=data,
+            timeout=10
+        )
+        response.raise_for_status()
+        
+        result = response.json()
+        itens = data.get("itens", [])
+        
+        success_msg = (f"✅ Pedido sincronizado! Total de itens: {len(itens)}.\n"
+                       f"Resposta Servidor: {json.dumps(result, indent=2, ensure_ascii=False)}")
+        
+        logger.info(f"Pedido sobrescrito com sucesso. Total itens: {len(itens)}")
+        return success_msg
+        
+    except json.JSONDecodeError:
+        return "Erro: JSON inválido para overwrite."
+    except Exception as e:
+        error_msg = f"Erro ao sobrescrever pedido: {str(e)}"
         logger.error(error_msg)
         return error_msg
 
@@ -697,8 +741,8 @@ def busca_lote_produtos(produtos: list[str]) -> str:
             # Ordenar por score (maior para menor)
             candidatos_pontuados.sort(key=lambda x: x[0], reverse=True)
             
-            # 4. Tentar buscar preço nos Top 15 candidatos (Retry Logic aumentado)
-            for score, candidato in candidatos_pontuados[:15]:
+            # 4. Tentar buscar preço nos Top 5 candidatos (Otimizado de 15 para 5)
+            for score, candidato in candidatos_pontuados[:5]:
                 ean = candidato["ean"]
                 nome_candidato = candidato["nome"]
                 logger.info(f"👉 [BUSCA LOTE] Tentando: '{nome_candidato}' (EAN: {ean}) | Score: {score:.2f}")

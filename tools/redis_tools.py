@@ -531,13 +531,13 @@ def add_item_to_cart(telefone: str, item_json: str) -> bool:
         # Isso corrige o bug onde o agente diz "Adicionei" mas só adiciona no Redis e não na Dashboard.
         if session and session.get("status") == "sent":
             try:
-                from tools.http_tools import alterar
-                # Preparar payload no formato esperado por alterar()
-                # alterar() espera: '{"itens": [item1, item2]}'
-                payload_api = json.dumps({"itens": [new_item]}, ensure_ascii=False)
+                from tools.http_tools import overwrite_order
+                # Para garantir sincronia total, enviamos o carrinho COMPLETO
+                full_cart = get_cart_items(telefone)
+                payload_api = json.dumps({"itens": full_cart}, ensure_ascii=False)
                 
-                logger.info(f"🚀 Pedido {session.get('order_id')} já enviado: Disparando alterar() automático para update remoto.")
-                alterar_result = alterar(telefone, payload_api)
+                logger.info(f"🚀 Pedido {session.get('order_id')} já enviado: Disparando overwrite_order() para sync completo.")
+                alterar_result = overwrite_order(telefone, payload_api)
                 logger.info(f"✅ Auto-update resultado: {alterar_result}")
                 
             except Exception as ex_api:
@@ -598,6 +598,21 @@ def remove_item_from_cart(telefone: str, index: int) -> bool:
             deleted_marker = "__DELETED__"
             client.lset(key, index, deleted_marker)
             client.lrem(key, 0, deleted_marker)
+            
+            # --- AUTO-UPDATE (Sync Deletions) ---
+            try:
+                session = get_order_session(telefone)
+                if session and session.get("status") == "sent":
+                    from tools.http_tools import overwrite_order
+                    # Ler carrinho atualizado
+                    full_cart_after = get_cart_items(telefone)
+                    payload_api = json.dumps({"itens": full_cart_after}, ensure_ascii=False)
+                    
+                    logger.info(f"🗑️ Item removido de pedido enviado: Disparando overwrite_order()")
+                    overwrite_order(telefone, payload_api)
+            except Exception as ex_del:
+                logger.error(f"❌ Falha no sync de remoção: {ex_del}")
+
             return True
             
         return False

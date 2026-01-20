@@ -542,7 +542,17 @@ ACTIVE_TOOLS = [
 
 def load_system_prompt() -> str:
     base_dir = Path(__file__).resolve().parent
-    prompt_path = str((base_dir / "prompts" / "agent_system_compact.md"))
+    # FIX: Usar caminho configurável do settings (Padrão: compact.md, mas permite grok.md)
+    prompt_file = getattr(settings, "agent_prompt_path", "prompts/agent_system_compact.md")
+    
+    # Resolver caminho absoluto ou relativo
+    if str(prompt_file).startswith("/"):
+        prompt_path = str(prompt_file)
+    else:
+        prompt_path = str(base_dir / prompt_file)
+        
+    logger.info(f"📄 Carregando System Prompt de: {prompt_path}")
+    
     try:
         text = Path(prompt_path).read_text(encoding="utf-8")
         text = text.replace("{base_url}", settings.supermercado_base_url)
@@ -699,7 +709,7 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
         logger.warning("---------------------------------------")
         # ---------------------------
         
-        config = {"configurable": {"thread_id": telefone}, "recursion_limit": 100}
+        config = {"configurable": {"thread_id": telefone}, "recursion_limit": 15}
 
         
         # RETRY AUTOMÁTICO com FALLBACK para Gemini 2.0 Flash
