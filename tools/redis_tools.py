@@ -211,7 +211,7 @@ import json
 from datetime import datetime
 
 # Constantes de tempo (em segundos)
-SESSION_TTL = 40 * 60  # 40 minutos para montar pedido
+SESSION_TTL = 30 * 60  # 30 minutos para montar pedido (Auto-expire)
 MODIFICATION_TTL = 15 * 60  # 15 minutos para alterar após envio
 
 
@@ -453,7 +453,8 @@ def cart_key(telefone: str) -> str:
 def add_item_to_cart(telefone: str, item_json: str) -> bool:
     """
     Adiciona um item (JSON string) ao carrinho.
-    Inicia sessão se não existir e renova TTL (40min).
+    Inicia sessão se não existir e renova TTL (30min).
+    Implementa DEDUPLICAÇÃO: Se item já existe, soma quantidade.
     """
     client = get_redis_client()
     if client is None:
@@ -466,14 +467,65 @@ def add_item_to_cart(telefone: str, item_json: str) -> bool:
             start_order_session(telefone)
 
         key = cart_key(telefone)
-        # RPUSH adiciona ao final da lista
-        client.rpush(key, item_json)
         
-        # Renova TTL do carrinho e da sessão para 40min
+        # 1. Parse do novo item
+        import json
+        new_item = json.loads(item_json)
+        new_prod_name = new_item.get("produto", "").strip().lower()
+        
+        # 2. Ler itens existentes para deduplicação
+        current_items = get_cart_items(telefone)
+        found_index = -1
+        
+        for i, item in enumerate(current_items):
+            existing_name = item.get("produto", "").strip().lower()
+            # Match exato de nome (simples e seguro)
+            if existing_name == new_prod_name:
+                found_index = i
+                break
+        
+        if found_index >= 0:
+            # --- CENÁRIO: ATUALIZAÇÃO (MERGE) ---
+            existing_item = current_items[found_index]
+            
+            # Somar quantidades
+            try:
+                nova_qtd = float(existing_item.get("quantidade", 0)) + float(new_item.get("quantidade", 0))
+                existing_item["quantidade"] = nova_qtd
+                
+                # Somar unidades se houver
+                if "unidades" in existing_item and "unidades" in new_item:
+                    existing_item["unidades"] = int(existing_item["unidades"]) + int(new_item["unidades"])
+                
+                # Atualizar preço (assume que o novo preço é o vigente)
+                existing_item["preco"] = new_item.get("preco", existing_item.get("preco"))
+                
+                # Fundir observações se forem diferentes
+                obs_old = existing_item.get("observacao", "")
+                obs_new = new_item.get("observacao", "")
+                if obs_new and obs_new not in obs_old:
+                    existing_item["observacao"] = (f"{obs_old} {obs_new}").strip()
+                
+                logger.info(f"🔄 Item '{new_prod_name}' atualizado no carrinho (MERGE): {nova_qtd}")
+                
+                # Reescrever carrinho inteiro (seguro)
+                client.delete(key)
+                for item in current_items:
+                    client.rpush(key, json.dumps(item, ensure_ascii=False))
+                    
+            except Exception as e:
+                logger.error(f"Erro ao fazer merge de itens: {e}")
+                # Fallback: Adiciona como novo se der erro no merge
+                client.rpush(key, item_json)
+
+        else:
+            # --- CENÁRIO: NOVO ITEM ---
+            client.rpush(key, item_json)
+        
+        # Renova TTL do carrinho e da sessão
         client.expire(key, SESSION_TTL)
         refresh_session_ttl(telefone)
         
-        logger.info(f"🛒 Item adicionado ao carrinho de {telefone}")
         return True
     except Exception as e:
         logger.error(f"Erro ao adicionar item ao carrinho: {e}")
