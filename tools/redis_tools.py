@@ -619,6 +619,8 @@ def clear_comprovante(telefone: str) -> bool:
         client.delete(comprovante_key(telefone))
         logger.info(f"🧾 Comprovante limpo para {telefone}")
         return True
+    except Exception as e:
+        logger.error(f"Erro ao limpar comprovante: {e}")
         return False
 
 # ============================================
