@@ -616,6 +616,12 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
                 if attempt > 0:
                     logger.info(f"✅ Retry bem-sucedido na tentativa {attempt + 1}")
                 break
+            else:
+                logger.warning(f"⚠️ Resposta considerada vazia/inválida. Última msg: {type(result['messages'][-1]).__name__ if result and 'messages' in result and result['messages'] else 'None'}")
+                if result and 'messages' in result and result['messages']:
+                    last = result['messages'][-1]
+                    logger.debug(f"🔍 DUMP LAST MSG: Content='{last.content}' | ToolCalls={getattr(last, 'tool_calls', 'N/A')} | Dict={last.dict() if hasattr(last, 'dict') else 'N/A'}")
+
         
         # 4. Extrair resposta (com fallback para Gemini empty responses)
         output = ""
@@ -656,9 +662,9 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
         
         # Fallback se ainda estiver vazio
         if not output or not output.strip():
-            # CRITICAL: Se LLM não gerou nada (0 completion tokens), retornar erro
+            # CRITICAL: Se LLM não gerou nada (ou resposta inválida), retornar erro
             if llm_generated_nothing:
-                logger.error("❌ LLM retornou 0 completion tokens - modelo pode estar sobrecarregado ou com problema")
+                logger.error("❌ LLM retornou resposta vazia ou inválida (possível falha no modelo/filtro)")
                 output = "Desculpe, tive um problema ao processar. Pode repetir por favor?"
             else:
                 # Logar o que foi rejeitado para debug
