@@ -320,8 +320,76 @@ def finalizar_pedido_tool(cliente: str, telefone: str, endereco: str, forma_paga
     return result
 
 @tool
-def alterar_tool(telefone: str, json_body: str) -> str:
-    """Atualizar o pedido no painel (para pedidos JÁ enviados)."""
+def alterar_tool(telefone: str) -> str:
+    """
+    Atualiza o pedido no painel com os itens ATUAIS do carrinho (Redis).
+    Use quando adicionar/remover itens de um pedido que JÁ FOI enviado (status 'sent').
+    Esta função reconstrói o JSON completo automaticamente.
+    """
+    import json as json_lib
+    from tools.redis_tools import get_cart_items, get_order_session
+    
+    # 1. Recuperar dados da sessão (cliente, endereço, pagamento originais)
+    session = get_order_session(telefone)
+    if not session:
+        return "❌ Erro: Sessão do pedido não encontrada. Tente finalizar novamente."
+    
+    # 2. Recuperar itens do carrinho (agora atualizados)
+    items = get_cart_items(telefone)
+    if not items:
+        return "❌ O carrinho está vazio! Não consigo atualizar o pedido."
+    
+    # 3. Formatar itens (mesma lógica do finalizar_pedido)
+    itens_formatados = []
+    total = 0.0
+    
+    for item in items:
+        preco = item.get("preco", 0.0)
+        quantidade = item.get("quantidade", 1.0)
+        unidades = item.get("unidades", 0)
+        obs_item = item.get("observacao", "")
+        
+        nome_produto = item.get("produto", item.get("nome_produto", "Produto"))
+        
+        # Lógica de peso vs unidade
+        if unidades > 0:
+            qtd_api = unidades
+            valor_estimado = round(preco * quantidade, 2)
+            preco_unitario_api = round(valor_estimado / unidades, 2)
+            obs_peso = f"Peso est: {quantidade:.3f}kg. PESAR."
+            if obs_item:
+                obs_item = f"{obs_item}. {obs_peso}"
+            else:
+                obs_item = obs_peso
+        else:
+            if quantidade < 1 or quantidade != int(quantidade):
+                qtd_api = 1
+            else:
+                qtd_api = int(quantidade)
+            preco_unitario_api = round(preco, 2)
+            
+        itens_formatados.append({
+            "nome_produto": nome_produto,
+            "quantidade": qtd_api,
+            "preco_unitario": preco_unitario_api,
+            "observacao": obs_item
+        })
+        total += preco * quantidade
+        
+    # 4. Montar Payload Completo (mantendo dados originais)
+    payload = {
+        "nome_cliente": session.get("cliente", "Cliente"),
+        "telefone": telefone,
+        "endereco": session.get("endereco", "A combinar"),
+        "forma": session.get("forma_pagamento", "Dinheiro"),
+        "observacao": session.get("observacao", "") + " (PEDIDO ATUALIZADO)",
+        "itens": itens_formatados,
+        # Mantém comprovante se existir
+        "comprovante": session.get("comprovante", "") 
+    }
+    
+    # 5. Enviar atualização
+    json_body = json_lib.dumps(payload, ensure_ascii=False)
     return alterar(telefone, json_body)
 
 @tool
