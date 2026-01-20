@@ -182,42 +182,80 @@ def pedidos(json_body: str) -> str:
 
 def alterar(telefone: str, json_body: str) -> str:
     """
-    Atualiza um pedido existente no painel dos funcionários (dashboard).
+    Atualiza um pedido existente. 
+    LÓGICA 'ADICIONAR': Busca o pedido atual e ADICIONA os novos itens que vieram no json_body,
+    a menos que a instrução explícita seja de substituir.
     
     Args:
-        telefone: Telefone do cliente para identificar o pedido
-        json_body: JSON string com os dados a serem atualizados
-    
-    Returns:
-        Mensagem de sucesso com resposta do servidor ou mensagem de erro
+        telefone: Telefone do cliente
+        json_body: JSON com "itens" novos. 
+                   Ex: '{"itens": [{"produto": "Coca", "quantidade": 1}]}'
     """
     # Remove caracteres não numéricos do telefone
     telefone_limpo = "".join(filter(str.isdigit, telefone))
-    url = f"{settings.supermercado_base_url}/pedidos/telefone/{telefone_limpo}"
+    base_url = f"{settings.supermercado_base_url}/pedidos/telefone/{telefone_limpo}"
     
     logger.info(f"Atualizando pedido para telefone: {telefone_limpo}")
     
     try:
-        # Validar JSON
-        data = json.loads(json_body)
-        logger.debug(f"Dados de atualização: {data}")
+        data_update = json.loads(json_body)
+        novos_itens = data_update.get("itens", [])
         
+        # 1. BUSCAR PEDIDO ATUAL (GET)
+        # Precisamos da lista atual para não apagar o que já existe
+        try:
+            get_response = requests.get(base_url, headers=get_auth_headers(), timeout=10)
+            get_response.raise_for_status()
+            pedido_atual = get_response.json()
+            
+            # Extrair itens atuais. Backend pode retornar 'itens' ou 'items'
+            itens_atuais = pedido_atual.get("itens", pedido_atual.get("items", []))
+            
+            # Se pedido não existe ou lista vazia, apenas ignoramos o merge
+            if not isinstance(itens_atuais, list):
+                itens_atuais = []
+                
+        except Exception as e:
+            logger.warning(f"⚠️ Não foi possível recuperar pedido atual para merge: {e}. Criando novo ou sobrescrevendo.")
+            itens_atuais = []
+
+        # 2. MERGE (APPEND)
+        # O cliente reclamou que 'atualizar' apagava tudo. Então vamos adicionar.
+        # TODO: Se quisermos remover, precisamos de uma lógica mais complexa (ex: qtd=-1)
+        # Por enquanto, assumimos que o LLM manda apenas o que é para ADICIONAR.
+        
+        itens_finais = itens_atuais + novos_itens
+        
+        # Atualizar o payload apenas com a lista mergeada
+        data_update["itens"] = itens_finais
+        
+        # 3. ENVIAR ATUALIZAÇÃO (PUT)
         response = requests.put(
-            url,
+            base_url,
             headers=get_auth_headers(),
-            json=data,
+            json=data_update,
             timeout=10
         )
         response.raise_for_status()
         
         result = response.json()
-        success_msg = f"✅ Pedido atualizado com sucesso!\n\nResposta do servidor:\n{json.dumps(result, indent=2, ensure_ascii=False)}"
-        logger.info("Pedido atualizado com sucesso")
+        
+        # Montar resumo para o LLM
+        total_items = len(itens_finais)
+        success_msg = (f"✅ Pedido atualizado! {len(novos_itens)} itens adicionados.\n"
+                       f"Total de itens agora: {total_items}.\n"
+                       f"Resposta Servidor: {json.dumps(result, indent=2, ensure_ascii=False)}")
+        
+        logger.info(f"Pedido atualizado com sucesso. Itens: {len(itens_atuais)} -> {total_items}")
         
         return success_msg
     
     except json.JSONDecodeError:
         error_msg = "Erro: O corpo da requisição não é um JSON válido."
+        logger.error(error_msg)
+        return error_msg
+    except Exception as e:
+        error_msg = f"Erro ao atualizar pedido: {str(e)}"
         logger.error(error_msg)
         return error_msg
 
