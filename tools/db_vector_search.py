@@ -292,53 +292,12 @@ def search_products_vector(query: str, limit: int = 20) -> str:
                         cat = cat_match.group(1) if cat_match else ""
                         logger.debug(f"   {i+1}. [{sim:.4f}] {nome} | {cat}")
                 
-                # 🔄 RETRY AUTOMÁTICO: Se o melhor score for muito baixo, tentar com palavras individuais
-                MIN_SCORE_THRESHOLD = 0.50
-                if results and results[0].get("similarity", 0) < MIN_SCORE_THRESHOLD:
-                    logger.info(f"⚠️ [RETRY] Score baixo ({results[0].get('similarity', 0):.3f}), tentando busca por palavras individuais")
-                    
-                    # Dividir query em palavras (ignorar palavras muito curtas e stop words)
-                    STOP_WORDS = {"de", "da", "do", "para", "com", "sem", "um", "uma", "kg", "und", "pct", "tipo", "350ml", "600ml", "330ml", "2l", "1l"}
-                    # Palavras de contexto que devem ser mantidas junto com outras palavras
-                    CONTEXT_WORDS = {"cerveja", "refrigerante", "refrig", "suco", "agua", "vinho", "bebida"}
-                    
-                    words = [w for w in query.lower().split() if len(w) >= 2 and w not in STOP_WORDS]
-                    
-                    # Identificar se há uma palavra de contexto
-                    context_word = None
-                    for w in words:
-                        if w in CONTEXT_WORDS:
-                            context_word = w
-                            break
-                    
-                    if len(words) >= 1:
-                        best_results = results  # Manter resultados originais como fallback
-                        best_score = results[0].get("similarity", 0)
-                        
-                        # Tentar cada palavra individual (mantendo contexto se existir)
-                        for word in words:
-                            if word == context_word:
-                                continue  # Não buscar só a palavra de contexto sozinha
-                            
-                            # Se temos contexto, buscar "contexto + palavra" (ex: "cerveja grf")
-                            search_term = f"{context_word} {word}" if context_word and word != context_word else word
-                            
-                            # Gerar embedding para o termo de busca
-                            term_embedding = _generate_embedding(search_term)
-                            term_embedding_str = f"[{','.join(map(str, term_embedding))}]"
-                            
-                            cur.execute(sql, (search_term, term_embedding_str, limit))
-                            term_results = cur.fetchall()
-                            
-                            if term_results:
-                                term_score = term_results[0].get("similarity", 0)
-                                # Aceitar se score for significativamente melhor
-                                if term_score > best_score + 0.05:
-                                    logger.info(f"✅ [RETRY] Termo '{search_term}' encontrou melhores resultados: {term_score:.3f}")
-                                    best_results = term_results
-                                    best_score = term_score
-                        
-                        results = best_results
+                # 🔄 RETRY AUTOMÁTICO - DESABILITADO POR PERFORMANCE (Lentidão de 10s+)
+                # O loop palavra-por-palavra fazia múltiplas chamadas de embedding sequenciais.
+                # A busca híbrida inicial + FlashRank deve ser suficiente.
+                pass
+                # if results and results[0].get("similarity", 0) < MIN_SCORE_THRESHOLD:
+                #    ... (Código removido para otimização) ...
                 
                 if not results:
                     return "Nenhum produto encontrado com esse termo."
