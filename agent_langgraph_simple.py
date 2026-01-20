@@ -447,12 +447,10 @@ def _build_llm(model_override: str = None):
     
     if provider == "google":
         logger.info(f"🚀 Usando Google Gemini: {model}")
-        return ChatGoogleGenerativeAI(
             model=model,
             google_api_key=settings.google_api_key,
             temperature=temp,
-            convert_system_message_to_human=True,  # Necessário para Gemini processar system prompts
-        )
+            # convert_system_message_to_human=True,  # REMOVIDO: Gemini agora suporta system prompts nativamente
     else:
         logger.info(f"🚀 Usando OpenAI: {model}")
         return ChatOpenAI(
@@ -571,6 +569,10 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
         initial_state = {"messages": all_messages}
         logger.info(f"📨 Enviando {len(all_messages)} mensagens para o LLM (histórico + atual)")
         
+        # DEBUG: Logar conteúdo das mensagens para ver se o histórico está vazio
+        for i, m in enumerate(all_messages):
+            logger.debug(f"📜 Msg {i} ({type(m).__name__}): {str(m.content)[:100]}...")
+        
         config = {"configurable": {"thread_id": telefone}, "recursion_limit": 100}
         
         # RETRY AUTOMÁTICO com FALLBACK para Gemini 2.0 Flash
@@ -657,7 +659,7 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
                     # Ignorar mensagens que parecem ser dados estruturados
                     if content.strip().startswith(("[", "{")):
                         continue
-                    
+
                     output = content
                     break
         
