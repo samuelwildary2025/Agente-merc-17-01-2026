@@ -140,8 +140,18 @@ def search_products_vector(query: str, limit: int = 20) -> str:
         "hamburger": "hamburguer carne",
         "carne de hamburguer": "hamburguer carne moida",
         "carne hamburguer": "hamburguer carne moida",
+        "carne de hamburguer": "hamburguer carne moida",
         "carne hamburguer": "hamburguer carne moida",
-        # Pães de Pacote / Industrializados
+        # Limpeza - NOVO (Qboa/Kiboa)
+        "qboa": "agua sanitaria",
+        "kiboa": "agua sanitaria",
+        "qui boa": "agua sanitaria",
+        "quiboa": "agua sanitaria",
+        # Higiene pessoal - NOVO (Prestobarba)
+        "prestobarba": "barbeador aparelho de barbear",
+        "presto barba": "barbeador aparelho de barbear",
+        "barbeador prestobarba": "barbeador aparelho de barbear",
+        "aparelho de barbear": "barbeador aparelho de barbear",
         "pao de saco": "pao de forma",
         "pão de saco": "pao de forma",
         # "pacote de pao" REMOVIDO - cliente quer hot dog ou hamburguer, agente deve perguntar
