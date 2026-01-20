@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     
     # LLM Provider (openai ou google)
     openai_api_key: Optional[str] = None
+    openai_embedding_api_key: Optional[str] = None # Chave específica para embeddings (OpenAI)
     google_api_key: Optional[str] = None
     llm_model: Optional[str] = None
     llm_temperature: float = 0.0  # Zero para respostas determinísticas

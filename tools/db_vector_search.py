@@ -30,9 +30,22 @@ def _get_openai_client() -> OpenAI:
     """Retorna cliente OpenAI singleton."""
     global _openai_client
     if _openai_client is None:
-        api_key = settings.openai_api_key
+        # Prioriza chave específica de embedding, senão usa a geral
+        api_key = getattr(settings, "openai_embedding_api_key", None) or settings.openai_api_key
+        
         if not api_key:
-            raise ValueError("OPENAI_API_KEY não configurada no .env")
+            raise ValueError("OPENAI_EMBEDDING_API_KEY ou OPENAI_API_KEY não configurada")
+            
+        # Para embeddings, usamos sempre a URL padrão da OpenAI, 
+        # a menos que uma URL específica de embedding seja configurada (futuro)
+        # Se usarmos a base_url do Grok (settings.openai_api_base), vai falhar para embeddings.
+        # Portanto, forçamos o client de embedding a ser "puro" OpenAI se a chave for diferente.
+        
+        # Lógica: Se temos uma chave de embedding separada, instanciamos cliente padrão.
+        # Se estamos usando a chave geral E base_url está setado (Grok), isso vai falhar 
+        # (pois Grok não tem embeddings).
+        # Solução: Cliente precisa fornecer chave separada.
+        
         _openai_client = OpenAI(api_key=api_key)
     return _openai_client
 
