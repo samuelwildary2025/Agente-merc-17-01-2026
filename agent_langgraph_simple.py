@@ -11,7 +11,6 @@ from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage, AI
 from langchain_core.tools import tool
 from langchain_core.runnables import RunnableConfig
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_community.callbacks import get_openai_callback
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode, tools_condition, create_react_agent
 from langgraph.checkpoint.memory import MemorySaver
@@ -593,40 +592,30 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
             
             logger.info("Executando agente...")
             
-            # Contador de tokens
-            with get_openai_callback() as cb:
-                result = agent.invoke(initial_state, config)
-                
-                # Cálculo de custo baseado no provider
-                provider = getattr(settings, "llm_provider", "google")
-                if provider == "google":
-                    input_cost = (cb.prompt_tokens / 1_000_000) * 0.10
-                    output_cost = (cb.completion_tokens / 1_000_000) * 0.40
-                else:
-                    input_cost = (cb.prompt_tokens / 1_000_000) * 0.15
-                    output_cost = (cb.completion_tokens / 1_000_000) * 0.60
-                
-                total_cost = input_cost + output_cost
-                
-                logger.info(f"📊 TOKENS - Prompt: {cb.prompt_tokens} | Completion: {cb.completion_tokens} | Total: {cb.total_tokens}")
-                logger.info(f"💰 CUSTO: ${total_cost:.6f} USD (Input: ${input_cost:.6f} | Output: ${output_cost:.6f})")
-                
-                
-                # Check real para saber se o LLM gerou algo (Gemini as vezes retorna 0 tokens no callback mas gera resposta)
-                has_ai_response = False
-                if result and isinstance(result, dict) and "messages" in result:
-                    # Verifica se a última mensagem é do tipo AIMessage
-                    ms = result["messages"]
-                    if ms and isinstance(ms[-1], AIMessage):
+            logger.info("Executando agente...")
+            
+            # Execução direta SEM contador de tokens (solicitado pelo usuário)
+            result = agent.invoke(initial_state, config)
+            
+            # Check real para saber se o LLM gerou algo
+            has_ai_response = False
+            if result and isinstance(result, dict) and "messages" in result:
+                # Verifica se a última mensagem é do tipo AIMessage
+                ms = result["messages"]
+                if ms and isinstance(ms[-1], AIMessage):
+                    last_msg = ms[-1]
+                    # Considera que TEVE resposta se tiver texto OU tool_calls
+                    if (last_msg.content and str(last_msg.content).strip()) or (hasattr(last_msg, 'tool_calls') and last_msg.tool_calls):
                         has_ai_response = True
-                
-                llm_generated_nothing = cb.completion_tokens == 0 and not has_ai_response
-                
-                # Se gerou algo, sair do loop
-                if not llm_generated_nothing:
-                    if attempt > 0:
-                        logger.info(f"✅ Retry bem-sucedido na tentativa {attempt + 1}")
-                    break
+            
+            # Se has_ai_response for True, então NÃO gerou "nada".
+            llm_generated_nothing = not has_ai_response
+            
+            # Se gerou algo, sair do loop
+            if not llm_generated_nothing:
+                if attempt > 0:
+                    logger.info(f"✅ Retry bem-sucedido na tentativa {attempt + 1}")
+                break
         
         # 4. Extrair resposta (com fallback para Gemini empty responses)
         output = ""
@@ -688,7 +677,14 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
             precos_encontrados: List[str] = []
             nao_encontrados_list: List[str] = []
             
-            for msg in result.get("messages", []):
+            # Pega apenas as mensagens NOVAS geradas nesta execução
+            num_input_messages = len(initial_state["messages"])
+            all_result_messages = result.get("messages", [])
+            new_messages = all_result_messages[num_input_messages:] if len(all_result_messages) > num_input_messages else []
+            
+            logger.info(f"🔄 Fallback analisando {len(new_messages)} novas mensagens (Total: {len(all_result_messages)})")
+
+            for msg in new_messages:
                 if hasattr(msg, 'content') and isinstance(msg.content, str):
                     content = msg.content
                     # Detectar resposta de estoque vazio
