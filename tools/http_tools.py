@@ -738,31 +738,41 @@ def busca_lote_produtos(produtos: list[str]) -> str:
                 
                 candidatos_pontuados.append((score, c))
             
-            # Ordenar por score (maior para menor)
-            candidatos_pontuados.sort(key=lambda x: x[0], reverse=True)
+            # 4. ESTRATÉGIA DINÂMICA (Time Budget)
+            # Verifica TODOS os candidatos (até o limite de 20 retornado pelo banco),
+            # MAS para se estourar o tempo de segurança (evitando timeout do WhatsApp).
             
-            # 4. Tentar buscar preço nos Top 5 candidatos (Otimizado de 15 para 5)
-            for score, candidato in candidatos_pontuados[:5]:
+            import time
+            item_start_time = time.time()
+            TIME_BUDGET = 8.0 # Segundos máximos por produto
+            
+            for i, (score, candidato) in enumerate(candidatos_pontuados):
+                # Check de tempo
+                if time.time() - item_start_time > TIME_BUDGET:
+                    logger.warning(f"⚠️ [BUSCA LOTE] Tempo esgotado ({TIME_BUDGET}s) para '{produto}'. Parei no candidato {i}.")
+                    break
+                    
                 ean = candidato["ean"]
                 nome_candidato = candidato["nome"]
-                logger.info(f"👉 [BUSCA LOTE] Tentando: '{nome_candidato}' (EAN: {ean}) | Score: {score:.2f}")
                 
-                preco_result = estoque_preco(ean)
+                # Log menos verboso para posições avançadas
+                if i < 3:
+                     logger.info(f"👉 [BUSCA LOTE] Tentando #{i+1}: '{nome_candidato}' (EAN: {ean})")
                 
                 try:
+                    preco_result = estoque_preco(ean)
                     preco_data = json.loads(preco_result)
+                    
                     if preco_data and isinstance(preco_data, list) and len(preco_data) > 0:
                         item = preco_data[0]
                         nome = item.get("produto", item.get("nome", produto))
                         preco = item.get("preco", 0)
-                        logger.info(f"✅ [BUSCA LOTE] Sucesso com '{nome}' (R$ {preco})")
+                        logger.info(f"✅ [BUSCA LOTE] Sucesso com #{i+1} '{nome}' (R$ {preco})")
                         return {"produto": nome, "erro": None, "preco": preco, "ean": ean, "quantidade": quantidade}
-                    else:
-                        logger.info(f"⚠️ [BUSCA LOTE] '{nome_candidato}' sem estoque/preço. Tentando próximo...")
-                except Exception as e:
-                    logger.warning(f"Erro ao processar retorno de preço para {ean}: {e}")
+                except Exception:
+                    pass
             
-            logger.warning(f"❌ [BUSCA LOTE] Nenhum dos top 3 candidatos para '{produto}' tinha estoque.")
+            logger.warning(f"❌ [BUSCA LOTE] Nenhum candidato com estoque encontrado para '{produto}' (Verificados: {len(candidatos_pontuados)})")
             return {"produto": produto, "erro": "Indisponível (sem estoque)", "preco": None}
             
         except Exception as e:
