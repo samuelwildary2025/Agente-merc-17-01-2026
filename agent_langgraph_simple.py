@@ -447,10 +447,12 @@ def _build_llm(model_override: str = None):
     
     if provider == "google":
         logger.info(f"🚀 Usando Google Gemini: {model}")
+        return ChatGoogleGenerativeAI(
             model=model,
             google_api_key=settings.google_api_key,
             temperature=temp,
             # convert_system_message_to_human=True,  # REMOVIDO: Gemini agora suporta system prompts nativamente
+        )
     else:
         logger.info(f"🚀 Usando OpenAI: {model}")
         return ChatOpenAI(
