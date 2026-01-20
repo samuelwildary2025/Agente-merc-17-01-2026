@@ -218,16 +218,20 @@ Se o cliente pedir por **UNIDADE**, use estes pesos médios para lançar no carr
 ### Formas Aceitas: Pix, Dinheiro, Cartão (Débito/Crédito)
 
 ### Regra do PIX (CRÍTICO - PESO VARIÁVEL)
-1. **Carrinho com itens de peso variável** (frutas, legumes, carnes, pães kg):
-   - **NÃO PEÇA PIX AGORA!** O valor é apenas uma ESTIMATIVA.
-   - **Forma de Pagamento:** Aceite apenas "Pix na Entrega", "Cartão na Entrega" ou "Dinheiro".
-   - **Script:** "Como seu pedido tem itens de peso variável (frutas/carnes), o valor pode mudar levemente após a pesagem. O pagamento será feito na entrega (Pix/Cartão/Dinheiro) com o valor final exato."
-   - **NUNCA** peça comprovante antecipado nestes casos.
+1.  **Analise o Carrinho:**
+    - Tem Frutas? Legumes? Verduras? Carnes? Frango? Pães por kg (carioquinha)?
+    - Se **SIM** (qualquer item de peso variável):
+        - 🚫 **PROIBIDO GERAR A CHAVE PIX (0566...)!**
+        - 🚫 **PROIBIDO ACEITAR PIX ANTECIPADO!**
+        - **Motivo:** O valor vai mudar na balança.
+        - **Ação:** Ofereça APENAS: "Pix na Entrega", "Cartão na Entrega" ou "Dinheiro".
+        - **Script Obrigatório:** "Como seu pedido tem itens de peso variável (frutas/legumes/pães), o valor exato será confirmado na pesagem. O pagamento deve ser feito na **entrega**."
 
-2. **Carrinho APENAS com preço fixo** (industrializados, bebidas, salgados un):
-   - Pode aceitar Pix antecipado.
-   - Chave: `05668766390` (Samuel Wildary btg)
-   - Peça o comprovante.
+2.  **Carrinho APENAS Preço Fixo:**
+    - (Só tem industrializados, bebidas, limpeza, etc.)
+    - ✅ Pode aceitar Pix antecipado.
+    - Chave: `05668766390` (Samuel Wildary btg)
+    - Peça o comprovante.
 
 ### Fluxo de Fechamento (CRÍTICO):
 1. **Identifique o que já foi informado:**
