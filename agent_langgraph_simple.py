@@ -167,6 +167,17 @@ def remove_item_tool(telefone: str, item_index: int) -> str:
     return "❌ Erro ao remover item (índice inválido?)."
 
 @tool
+def salvar_endereco_tool(telefone: str, endereco: str) -> str:
+    """
+    Salva o endereço do cliente para usar depois no fechamento do pedido.
+    Use IMEDIATAMENTE quando o cliente informar o endereço (mesmo no início da conversa).
+    """
+    from tools.redis_tools import set_address
+    if set_address(telefone, endereco):
+        return f"✅ Endereço salvo: {endereco}"
+    return "❌ Erro ao salvar endereço."
+
+@tool
 def finalizar_pedido_tool(cliente: str, telefone: str, endereco: str, forma_pagamento: str, observacao: str = "", comprovante: str = "", taxa_entrega: float = 0.0) -> str:
     """
     Finalizar o pedido usando os itens que estão no carrinho.
@@ -175,15 +186,27 @@ def finalizar_pedido_tool(cliente: str, telefone: str, endereco: str, forma_paga
     Args:
     - cliente: Nome do cliente
     - telefone: Telefone (com DDD)
-    - endereco: Endereço de entrega (rua, número, bairro)
+    - endereco: Endereço de entrega. Se vazio, tentará usar o salvo anteriormente.
     - forma_pagamento: PIX, DINHEIRO, CARTAO
     - observacao: Observações do pedido (opcional)
     - comprovante: URL do comprovante (opcional - será buscado automaticamente se não fornecido)
     - taxa_entrega: Valor da taxa de entrega em reais (opcional, padrão 0)
     """
     import json as json_lib
+    from tools.redis_tools import get_comprovante, get_address
     
-    # 0. Buscar comprovante salvo automaticamente se não foi passado
+    # 0. Buscar endereço salvo se não foi passado
+    endereco_final = endereco
+    if not endereco_final or endereco_final.strip() == "":
+        addr = get_address(telefone)
+        if addr:
+            endereco_final = addr
+            logger.info(f"🏠 Usando endereço salvo automaticamente: {addr}")
+        else:
+            return "❌ Endereço de entrega obrigatório. Por favor, peça ao cliente."
+            
+    # 0.1 Buscar comprovante salvo automaticamente se não foi passado
+
     comprovante_final = comprovante
     if not comprovante_final:
         comprovante_salvo = get_comprovante(telefone)
@@ -420,6 +443,7 @@ ACTIVE_TOOLS = [
     consultar_encarte_tool,
     calcular_total_tool,  # Novo: Cálculo exato do pedido
     calculadora_tool,     # Novo: Calculadora geral
+    salvar_endereco_tool, # Novo: Salvar endereço antecipadamente
     # salvar_comprovante_tool removido - comprovante agora é salvo automaticamente pelo server.py
 ]
 

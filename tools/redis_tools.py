@@ -619,6 +619,63 @@ def clear_comprovante(telefone: str) -> bool:
         client.delete(comprovante_key(telefone))
         logger.info(f"🧾 Comprovante limpo para {telefone}")
         return True
+        return False
+
+# ============================================
+# Endereço do Cliente (Persistence)
+# ============================================
+
+def address_key(telefone: str) -> str:
+    """Chave para armazenar endereço do cliente temporariamente."""
+    return f"address:{telefone}"
+
+
+def set_address(telefone: str, endereco: str) -> bool:
+    """
+    Salva o endereço do cliente.
+    TTL de 2 horas.
+    """
+    client = get_redis_client()
+    if client is None:
+        return False
+    
+    try:
+        key = address_key(telefone)
+        client.set(key, endereco, ex=7200)  # 2 horas
+        logger.info(f"🏠 Endereço salvo para {telefone}: {endereco[:50]}...")
+        return True
     except Exception as e:
-        logger.error(f"Erro ao limpar comprovante: {e}")
+        logger.error(f"Erro ao salvar endereço: {e}")
+        return False
+
+
+def get_address(telefone: str) -> Optional[str]:
+    """Recupera o endereço salvo do cliente."""
+    client = get_redis_client()
+    if client is None:
+        return None
+    
+    try:
+        key = address_key(telefone)
+        addr = client.get(key)
+        if addr:
+            logger.info(f"🏠 Endereço recuperado para {telefone}")
+        return addr
+    except Exception as e:
+        logger.error(f"Erro ao recuperar endereço: {e}")
+        return None
+
+
+def clear_address(telefone: str) -> bool:
+    """Remove o endereço salvo."""
+    client = get_redis_client()
+    if client is None:
+        return False
+    
+    try:
+        client.delete(address_key(telefone))
+        logger.info(f"🏠 Endereço limpo para {telefone}")
+        return True
+    except Exception as e:
+        logger.error(f"Erro ao limpar endereço: {e}")
         return False
