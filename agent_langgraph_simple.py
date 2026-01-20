@@ -115,10 +115,22 @@ def add_item_tool(telefone: str, produto: str, quantidade: float = 1.0, observac
     }
     
     import json as json_lib
+    from tools.redis_tools import get_order_session
+    
+    # Adicionar ao carrinho
     if add_item_to_cart(telefone, json_lib.dumps(item, ensure_ascii=False)):
+        msg = ""
         if unidades > 0:
-            return f"✅ Item '{produto}' ({unidades} un, ~{quantidade:.3f}kg) adicionado.\n\nGostaria de adicionar algo mais?"
-        return f"✅ Item '{produto}' ({quantidade}) adicionado ao carrinho.\n\nGostaria de adicionar algo mais?"
+            msg = f"✅ Item '{produto}' ({unidades} un, ~{quantidade:.3f}kg) adicionado."
+        else:
+            msg = f"✅ Item '{produto}' ({quantidade}) adicionado ao carrinho."
+            
+        # VERIFICAÇÃO CRÍTICA: Se o pedido já foi enviado, avisar o agente que precisa atualizar
+        session = get_order_session(telefone)
+        if session and session.get("status") == "sent":
+            msg += "\n\n⚠️ **ATENÇÃO:** O pedido JÁ FOI ENVIADO anteriormente! Para validar essa alteração no sistema, você **DEVE** chamar `finalizar_pedido_tool` (ou `alterar_tool`) AGORA."
+            
+        return msg + "\n\nGostaria de adicionar algo mais?"
     return "❌ Erro ao adicionar item. Tente novamente."
 
 @tool
@@ -160,10 +172,19 @@ def remove_item_tool(telefone: str, item_index: int) -> str:
     Remover um item do carrinho pelo número (índice 1-based, como mostrado no view_cart).
     Ex: Para remover o item 1, passe 1.
     """
+    from tools.redis_tools import get_order_session
+    
     # Converter de 1-based para 0-based
     idx = int(item_index) - 1
     if remove_item_from_cart(telefone, idx):
-        return f"✅ Item {item_index} removido do carrinho."
+        msg = f"✅ Item {item_index} removido do carrinho."
+        
+        # VERIFICAÇÃO CRÍTICA: Se o pedido já foi enviado, avisar o agente que precisa atualizar
+        session = get_order_session(telefone)
+        if session and session.get("status") == "sent":
+            msg += "\n\n⚠️ **ATENÇÃO:** O pedido JÁ FOI ENVIADO anteriormente! Para validar essa remoção no sistema, você **DEVE** chamar `finalizar_pedido_tool` (ou `alterar_tool`) AGORA."
+            
+        return msg
     return "❌ Erro ao remover item (índice inválido?)."
 
 @tool
