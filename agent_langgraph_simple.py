@@ -620,7 +620,8 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
                 logger.warning(f"⚠️ Resposta considerada vazia/inválida. Última msg: {type(result['messages'][-1]).__name__ if result and 'messages' in result and result['messages'] else 'None'}")
                 if result and 'messages' in result and result['messages']:
                     last = result['messages'][-1]
-                    logger.debug(f"🔍 DUMP LAST MSG: Content='{last.content}' | ToolCalls={getattr(last, 'tool_calls', 'N/A')} | Dict={last.dict() if hasattr(last, 'dict') else 'N/A'}")
+                    # FORCE LOG AT WARNING LEVEL TO SEE DUMP
+                    logger.warning(f"🔍 DUMP LAST MSG: Content='{last.content}' | ToolCalls={getattr(last, 'tool_calls', 'N/A')} | AddKwargs={last.additional_kwargs} | Dict={last.dict() if hasattr(last, 'dict') else 'N/A'}")
 
         
         # 4. Extrair resposta (com fallback para Gemini empty responses)
