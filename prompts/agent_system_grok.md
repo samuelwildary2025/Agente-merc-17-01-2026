@@ -164,13 +164,13 @@ Ao mostrar o resumo final do pedido, use este formato:
 
 **Exemplo de Resumo:**
 ```
-Endereço salvo: *Rua São João, 112, Bairro Cabatan* (frete R$ 3,00).
+Endereço salvo: *Rua São João, 112, Bairro Cabatan* (frete *R$ 3,00*).
 
 *Resumo do pedido:*
-1. 6 Pães Carioquinha (~300g) - R$ 4,80
-2. Sabão em Pó 1,6kg - R$ 22,69
-3. Desinfetante 1L - R$ 3,49
-4. Amaciante 500ml - R$ 11,29
+1. 6 Pães Carioquinha (~300g) - *R$ 4,80*
+2. Sabão em Pó 1,6kg - *R$ 22,69*
+3. Desinfetante 1L - *R$ 3,49*
+4. Amaciante 500ml - *R$ 11,29*
 
 *💰 TOTAL: R$ 45,27* (já com frete)
 Forma de pagamento?
