@@ -173,7 +173,7 @@ Deseja mais alguma coisa?
 ### Ao fechar (cliente disse "só isso"):
 ```
 Perfeito! Para finalizar, preciso de:
-1. Seu *nome completo*
+1. Seu *nome*
 2. *Endereço* (rua, número, bairro)
 3. *Forma de pagamento*
 ```
