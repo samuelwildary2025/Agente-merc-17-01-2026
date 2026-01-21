@@ -313,26 +313,39 @@ def search_products_vector(query: str, limit: int = 20) -> str:
                     passages = []
                     for i, r in enumerate(results):
                         # Extrair texto limpo para o ranker comparar com a query
+                        # IMPORTANTE: Garantir que text é sempre uma string não-None
+                        text_content = r.get("text") or ""
+                        if not isinstance(text_content, str):
+                            text_content = str(text_content)
+                        
+                        # Skip se texto vazio (evita erro no FlashRank)
+                        if not text_content.strip():
+                            continue
+                            
                         passages.append({
                             "id": i,
-                            "text": r.get("text", "") # O campo 'text' já contém o JSON dump ou texto cru
+                            "text": text_content
                         })
                     
-                    # Executar re-rank
-                    rerank_request = RerankRequest(query=query, passages=passages)
-                    reranked_results = ranker.rerank(rerank_request)
-                    
-                    # Reconstruir lista ordenada baseada nos IDs retornados
-                    new_ordered_results = []
-                    for ranked in reranked_results:
-                        original_idx = ranked["id"]
-                        score = ranked["score"]
-                        item = results[original_idx]
-                        item["similarity"] = score # Atualizar score (agora é do cross-encoder)
-                        new_ordered_results.append(item)
-                    
-                    logger.info(f"✅ [RERANK] Reordenação concluída. Top 1 antigo score: {results[0].get('similarity'):.3f} -> Novo: {new_ordered_results[0].get('similarity'):.3f}")
-                    results = new_ordered_results
+                    # Só faz rerank se tiver passages válidos
+                    if not passages:
+                        logger.warning(f"⚠️ [RERANK] Nenhum passage válido para rerank, mantendo ordem original")
+                    else:
+                        # Executar re-rank
+                        rerank_request = RerankRequest(query=query, passages=passages)
+                        reranked_results = ranker.rerank(rerank_request)
+                        
+                        # Reconstruir lista ordenada baseada nos IDs retornados
+                        new_ordered_results = []
+                        for ranked in reranked_results:
+                            original_idx = ranked["id"]
+                            score = ranked["score"]
+                            item = results[original_idx]
+                            item["similarity"] = score # Atualizar score (agora é do cross-encoder)
+                            new_ordered_results.append(item)
+                        
+                        logger.info(f"✅ [RERANK] Reordenação concluída. Top 1 antigo score: {results[0].get('similarity'):.3f} -> Novo: {new_ordered_results[0].get('similarity'):.3f}")
+                        results = new_ordered_results
                     
                 except Exception as e:
                     logger.warning(f"⚠️ [RERANK FAILED] Falha no FlashRank, mantendo ordem original: {e}")
