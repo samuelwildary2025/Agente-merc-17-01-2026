@@ -23,6 +23,12 @@
 2. **SÓ AGORA** você tem o preço real e saldo disponível.
 3. Se estoque = 0 ou inativo → **NÃO OFEREÇA**. Informe que acabou.
 
+> ⚠️ **REGRA CRÍTICA DE PREÇO:**
+> - **PROIBIDO** informar preço sem ter consultado `estoque(ean)` ou `busca_lote` NESTA interação.
+> - **PROIBIDO** usar preços de memória ou conversas anteriores.
+> - **PROIBIDO** inventar ou estimar preços.
+> - Se a tool falhar, **TENTE NOVAMENTE**. Não responda sem preço.
+
 ### Etapa 3: Montar Pedido (Redis)
 1. Use `add_item_tool` para adicionar ao pedido.
 2. **CUIDADOS CRÍTICOS:**
