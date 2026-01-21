@@ -325,6 +325,10 @@ def estoque_preco(ean: str) -> str:
 
     Monta a URL completa concatenando o EAN ao final de settings.estoque_ean_base_url.
     Exemplo: {base}/7891149103300
+    
+    MELHORIAS:
+    - Retry automático com backoff exponencial (3 tentativas)
+    - Timeouts progressivos para lidar com API lenta
 
     Args:
         ean: Código EAN do produto (apenas dígitos).
@@ -332,6 +336,8 @@ def estoque_preco(ean: str) -> str:
     Returns:
         JSON string com informações do produto ou mensagem de erro amigável.
     """
+    import time
+    
     base = (settings.estoque_ean_base_url or "").strip().rstrip("/")
     if not base:
         msg = "Erro: ESTOQUE_EAN_BASE_URL não configurado no .env"
@@ -346,188 +352,206 @@ def estoque_preco(ean: str) -> str:
         return msg
 
     url = f"{base}/{ean_digits}"
-    logger.info(f"Consultando estoque_preco por EAN: {url}")
-
+    
     headers = {
         "Accept": "application/json",
     }
-
-    try:
-        resp = requests.get(url, headers=headers, timeout=10)
-        resp.raise_for_status()
-
-        # resposta esperada: lista de objetos
+    
+    # RETRY CONFIG
+    MAX_RETRIES = 3
+    TIMEOUTS = [15, 20, 25]  # Timeouts progressivos por tentativa
+    
+    last_error = None
+    
+    for attempt in range(MAX_RETRIES):
+        timeout = TIMEOUTS[min(attempt, len(TIMEOUTS) - 1)]
+        
         try:
-            items = resp.json()
-        except json.JSONDecodeError:
-            txt = resp.text
-            logger.warning("Resposta não é JSON válido; retornando texto bruto")
-            return txt
+            if attempt > 0:
+                logger.info(f"🔄 Retry #{attempt + 1} para EAN {ean_digits} (timeout: {timeout}s)")
+            else:
+                logger.info(f"Consultando estoque_preco por EAN: {url}")
+            
+            resp = requests.get(url, headers=headers, timeout=timeout)
+            resp.raise_for_status()
 
-        # Se vier um único objeto, normalizar para lista
-        items = items if isinstance(items, list) else ([items] if isinstance(items, dict) else [])
-
-        # Heurística de extração de preço
-        PRICE_KEYS = (
-            "vl_produto",
-            "vl_produto_normal",
-            "preco",
-            "preco_venda",
-            "valor",
-            "valor_unitario",
-            "preco_unitario",
-            "atacadoPreco",
-        )
-
-        # Chaves de quantidade em ordem de prioridade
-        STOCK_QTY_KEYS = [
-            "qtd_produto",  # Chave principal do sistema
-            "qtd_movimentacao", # FALLBACK: Muitas vezes o estoque real vem aqui neste sistema
-            "estoque", "qtd", "qtde", "qtd_estoque", "quantidade", "quantidade_disponivel",
-            "quantidadeDisponivel", "qtdDisponivel", "qtdEstoque", "estoqueAtual", "saldo",
-            "qty", "quantity", "stock", "amount"
-        ]
-
-        # Possíveis indicadores de disponibilidade
-        STATUS_KEYS = ("situacao", "situacaoEstoque", "status", "statusEstoque")
-
-        def _parse_float(val) -> float | None:
+            # resposta esperada: lista de objetos
             try:
-                s = str(val).strip()
-                if not s:
+                items = resp.json()
+            except json.JSONDecodeError:
+                txt = resp.text
+                logger.warning("Resposta não é JSON válido; retornando texto bruto")
+                return txt
+
+            # Se vier um único objeto, normalizar para lista
+            items = items if isinstance(items, list) else ([items] if isinstance(items, dict) else [])
+
+            # Heurística de extração de preço
+            PRICE_KEYS = (
+                "vl_produto",
+                "vl_produto_normal",
+                "preco",
+                "preco_venda",
+                "valor",
+                "valor_unitario",
+                "preco_unitario",
+                "atacadoPreco",
+            )
+
+            # Chaves de quantidade em ordem de prioridade
+            STOCK_QTY_KEYS = [
+                "qtd_produto",  # Chave principal do sistema
+                "qtd_movimentacao", # FALLBACK: Muitas vezes o estoque real vem aqui neste sistema
+                "estoque", "qtd", "qtde", "qtd_estoque", "quantidade", "quantidade_disponivel",
+                "quantidadeDisponivel", "qtdDisponivel", "qtdEstoque", "estoqueAtual", "saldo",
+                "qty", "quantity", "stock", "amount"
+            ]
+
+            # Possíveis indicadores de disponibilidade
+            STATUS_KEYS = ("situacao", "situacaoEstoque", "status", "statusEstoque")
+
+            def _parse_float(val) -> float | None:
+                try:
+                    s = str(val).strip()
+                    if not s:
+                        return None
+                    # aceita formato brasileiro
+                    s = s.replace(".", "").replace(",", ".") if s.count(",") == 1 and s.count(".") > 1 else s.replace(",", ".")
+                    return float(s)
+                except Exception:
                     return None
-                # aceita formato brasileiro
-                s = s.replace(".", "").replace(",", ".") if s.count(",") == 1 and s.count(".") > 1 else s.replace(",", ".")
-                return float(s)
-            except Exception:
-                return None
 
-        def _has_positive_qty(d: Dict[str, Any]) -> bool:
-            # Tenta encontrar qualquer chave que tenha valor > 0
-            for k in STOCK_QTY_KEYS:
-                if k in d:
-                    v = d.get(k)
-                    try:
-                        n = float(str(v).replace(",", "."))
-                        if n > 0:
-                            return True
-                    except Exception:
-                        # ignore não numérico
-                        pass
-            return False
-
-        def _is_available(d: Dict[str, Any]) -> bool:
-            # 1. Verificar se está ativo (se a flag existir)
-            # Se 'ativo' não existir, assume True por padrão
-            is_active = d.get("ativo", True)
-            if not is_active:
-                logger.debug(f"Item filtrado: ativo=False")
+            def _has_positive_qty(d: Dict[str, Any]) -> bool:
+                # Tenta encontrar qualquer chave que tenha valor > 0
+                for k in STOCK_QTY_KEYS:
+                    if k in d:
+                        v = d.get(k)
+                        try:
+                            n = float(str(v).replace(",", "."))
+                            if n > 0:
+                                return True
+                        except Exception:
+                            # ignore não numérico
+                            pass
                 return False
 
-            # 2. Verificar Estoque
-            qty = _extract_qty(d)
-            
-            # Categorias que NÃO verificam estoque (produção própria ou pesagem)
-            # PADARIA: produtos feitos na hora, não têm controle de quantidade
-            # FRIGORIFICO/AÇOUGUE: vendem antes de dar entrada na nota
-            # HORTI/LEGUMES: idem, produção variável
-            cat = str(d.get("classificacao01", "")).upper()
-            ignora_estoque = any(x in cat for x in [
-                "PADARIA",  # Pães, bolos - feitos na hora
-                "FRIGORIFICO", "HORTI", "AÇOUGUE", "ACOUGUE", 
-                "LEGUMES", "VERDURAS", "AVES", "CARNES"
-            ])
-            
-            if ignora_estoque:
-                # Regra de Exceção: Setor INDUSTRIAL (ex: Padaria Industrial)
-                # Produtos industrializados/embalados DEVEM respeitar o estoque do sistema
-                if "INDUSTRIAL" in cat:
-                    logger.debug(f"Item de {cat}: Setor Industrial detectado, forçando verificação de estoque.")
-                    # Continua para o check de quantidade lá embaixo...
-                else:
-                    # Se não for industrial (ex: Padaria própria, Açougue), libera geral
-                    logger.debug(f"Item de {cat}: ignorando verificação de estoque (ativo={is_active})")
+            def _is_available(d: Dict[str, Any]) -> bool:
+                # 1. Verificar se está ativo (se a flag existir)
+                # Se 'ativo' não existir, assume True por padrão
+                is_active = d.get("ativo", True)
+                if not is_active:
+                    logger.debug(f"Item filtrado: ativo=False")
+                    return False
+
+                # 2. Verificar Estoque
+                qty = _extract_qty(d)
+                
+                # Categorias que NÃO verificam estoque (produção própria ou pesagem)
+                # PADARIA: produtos feitos na hora, não têm controle de quantidade
+                # FRIGORIFICO/AÇOUGUE: vendem antes de dar entrada na nota
+                # HORTI/LEGUMES: idem, produção variável
+                cat = str(d.get("classificacao01", "")).upper()
+                ignora_estoque = any(x in cat for x in [
+                    "PADARIA",  # Pães, bolos - feitos na hora
+                    "FRIGORIFICO", "HORTI", "AÇOUGUE", "ACOUGUE", 
+                    "LEGUMES", "VERDURAS", "AVES", "CARNES"
+                ])
+                
+                if ignora_estoque:
+                    # Regra de Exceção: Setor INDUSTRIAL (ex: Padaria Industrial)
+                    # Produtos industrializados/embalados DEVEM respeitar o estoque do sistema
+                    if "INDUSTRIAL" in cat:
+                        logger.debug(f"Item de {cat}: Setor Industrial detectado, forçando verificação de estoque.")
+                        # Continua para o check de quantidade lá embaixo...
+                    else:
+                        # Se não for industrial (ex: Padaria própria, Açougue), libera geral
+                        logger.debug(f"Item de {cat}: ignorando verificação de estoque (ativo={is_active})")
+                        return True
+
+                # Para os demais (Mercearia, Bebidas, INDUSTRIAL, etc), estoque deve ser POSITIVO
+                if qty is not None and qty > 0:
                     return True
+                
+                # Se chegou aqui, ou é 0, ou é negativo em categoria que não pode
+                logger.debug(f"Item filtrado: quantidade={qty} (Categoria: {cat})")
+                return False
 
-            # Para os demais (Mercearia, Bebidas, INDUSTRIAL, etc), estoque deve ser POSITIVO
-            if qty is not None and qty > 0:
-                return True
-            
-            # Se chegou aqui, ou é 0, ou é negativo em categoria que não pode
-            logger.debug(f"Item filtrado: quantidade={qty} (Categoria: {cat})")
-            return False
+            def _extract_qty(d: Dict[str, Any]) -> float | None:
+                best_qty = None
+                for k in STOCK_QTY_KEYS:
+                    if k in d:
+                        try:
+                            val = float(str(d.get(k)).replace(',', '.'))
+                            if val > 0:
+                                return val # Achou estoque positivo!
+                            if best_qty is None:
+                                best_qty = val # Guarda o primeiro (ex: 0.0) como fallback se nada for > 0
+                        except Exception:
+                            pass
+                return best_qty
 
-        def _extract_qty(d: Dict[str, Any]) -> float | None:
-            best_qty = None
-            for k in STOCK_QTY_KEYS:
-                if k in d:
-                    try:
-                        val = float(str(d.get(k)).replace(',', '.'))
-                        if val > 0:
-                            return val # Achou estoque positivo!
-                        if best_qty is None:
-                            best_qty = val # Guarda o primeiro (ex: 0.0) como fallback se nada for > 0
-                    except Exception:
-                        pass
-            return best_qty
+            def _extract_price(d: Dict[str, Any]) -> float | None:
+                for k in PRICE_KEYS:
+                    if k in d:
+                        val = _parse_float(d.get(k))
+                        if val is not None:
+                            return val
+                return None
 
-        def _extract_price(d: Dict[str, Any]) -> float | None:
-            for k in PRICE_KEYS:
-                if k in d:
-                    val = _parse_float(d.get(k))
-                    if val is not None:
-                        return val
-            return None
+            # [OTIMIZAÇÃO] Filtro estrito para saída
+            sanitized: list[Dict[str, Any]] = []
+            for it in items:
+                if not isinstance(it, dict):
+                    continue
+                if not _is_available(it):
+                    continue  # manter apenas itens com estoque/disponibilidade
 
-        # [OTIMIZAÇÃO] Filtro estrito para saída
-        sanitized: list[Dict[str, Any]] = []
-        for it in items:
-            if not isinstance(it, dict):
+                # Cria dict limpo apenas com campos essenciais
+                clean = {}
+                
+                # Copiar apenas identificadores básicos se existirem
+                for k in ["produto", "nome", "descricao", "id", "ean", "cod_barra"]:
+                    if k in it: clean[k] = it[k]
+
+                # Normalizar disponibilidade (se passou no _is_available, é True)
+                clean["disponibilidade"] = True
+
+                # Normalizar preço em campo unificado
+                price = _extract_price(it)
+                if price is not None:
+                    clean["preco"] = price
+
+                qty = _extract_qty(it)
+                if qty is not None:
+                    clean["quantidade"] = qty
+
+                sanitized.append(clean)
+
+            logger.info(f"EAN {ean_digits}: {len(sanitized)} item(s) disponíveis após filtragem")
+
+            return json.dumps(sanitized, indent=2, ensure_ascii=False)
+
+        except requests.exceptions.Timeout:
+            last_error = f"Timeout (tentativa {attempt + 1}/{MAX_RETRIES})"
+            logger.warning(f"⏱️ {last_error}")
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(0.5)  # Pequena pausa antes de retry
                 continue
-            if not _is_available(it):
-                continue  # manter apenas itens com estoque/disponibilidade
-
-            # Cria dict limpo apenas com campos essenciais
-            clean = {}
-            
-            # Copiar apenas identificadores básicos se existirem
-            for k in ["produto", "nome", "descricao", "id", "ean", "cod_barra"]:
-                if k in it: clean[k] = it[k]
-
-            # Normalizar disponibilidade (se passou no _is_available, é True)
-            clean["disponibilidade"] = True
-
-            # Normalizar preço em campo unificado
-            price = _extract_price(it)
-            if price is not None:
-                clean["preco"] = price
-
-            qty = _extract_qty(it)
-            if qty is not None:
-                clean["quantidade"] = qty
-
-            sanitized.append(clean)
-
-        logger.info(f"EAN {ean_digits}: {len(sanitized)} item(s) disponíveis após filtragem")
-
-        return json.dumps(sanitized, indent=2, ensure_ascii=False)
-
-    except requests.exceptions.Timeout:
-        msg = "Erro: Timeout ao consultar preço/estoque por EAN. Tente novamente."
-        logger.error(msg)
-        return msg
-    except requests.exceptions.HTTPError as e:
-        status = getattr(e.response, "status_code", "?")
-        body = getattr(e.response, "text", "")
-        msg = f"Erro HTTP ao consultar EAN: {status} - {body}"
-        logger.error(msg)
-        return msg
-    except requests.exceptions.RequestException as e:
-        msg = f"Erro ao consultar EAN: {str(e)}"
-        logger.error(msg)
-        return msg
-
-    # [Cleanup] Removido bloco duplicado de ean_lookup antigo fora de função
+        except requests.exceptions.HTTPError as e:
+            status = getattr(e.response, "status_code", "?")
+            body = getattr(e.response, "text", "")
+            msg = f"Erro HTTP ao consultar EAN: {status} - {body}"
+            logger.error(msg)
+            return msg
+        except requests.exceptions.RequestException as e:
+            msg = f"Erro ao consultar EAN: {str(e)}"
+            logger.error(msg)
+            return msg
+    
+    # Se esgotou todas as tentativas
+    msg = f"Erro: API lenta. Não foi possível consultar EAN após {MAX_RETRIES} tentativas."
+    logger.error(msg)
+    return msg
 
 
 # ============================================
@@ -744,7 +768,7 @@ def busca_lote_produtos(produtos: list[str]) -> str:
             
             import time
             item_start_time = time.time()
-            TIME_BUDGET = 8.0 # Segundos máximos por produto
+            TIME_BUDGET = 20.0 # Segundos máximos por produto (aumentado para permitir retries)
             
             for i, (score, candidato) in enumerate(candidatos_pontuados):
                 # Check de tempo
