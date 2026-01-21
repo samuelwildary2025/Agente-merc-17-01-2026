@@ -147,7 +147,6 @@ def _send_whatsapp_message(telefone: str, mensagem: str) -> bool:
         if texto_limpo:
             whatsapp.send_text(telefone, texto_limpo)
             # Pequeno delay para a mensagem de texto chegar primeiro
-            import time
             time.sleep(1.0)
             
         # 2. Enviar cada imagem sequencialmente
