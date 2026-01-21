@@ -225,9 +225,11 @@ def search_products_vector(query: str, limit: int = 20) -> str:
     is_processed = any(term in query_lower for term in PROCESSED_TERMS)
     
     if not is_processed:
+        import re
         query_to_check = query.lower()
         for keyword in HORTIFRUTI_KEYWORDS:
-            if keyword in query_to_check:
+            # Usar regex para buscar palavra exata (evita "maca" em "macarrao")
+            if re.search(r'\b' + re.escape(keyword) + r'\b', query_to_check):
                 # Adiciona contexto de categoria para melhorar a similaridade
                 if keyword in ["frango", "carne", "peixe"]:
                     enhanced_query = f"{query} açougue carnes"
