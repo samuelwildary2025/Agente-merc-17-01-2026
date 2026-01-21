@@ -283,6 +283,18 @@ def search_products_vector(query: str, limit: int = 20) -> str:
                 # LOG detalhado para debug de relevância
                 if results:
                     import re
+                    # Filtrar resultados válidos (e previnir None)
+                    valid_results = []
+                    for r in results:
+                        if not r or r.get("text") is None:
+                            continue
+                        # Garantir que text seja string
+                        if not isinstance(r["text"], str):
+                            r["text"] = str(r["text"] or "")
+                        valid_results.append(r)
+                    
+                    results = valid_results
+
                     for i, r in enumerate(results[:5]):  # Top 5 para debug
                         text = r.get("text", "")
                         sim = r.get("similarity", 0)
