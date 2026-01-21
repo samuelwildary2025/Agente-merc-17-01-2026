@@ -34,8 +34,13 @@
 2. **CUIDADOS CRÍTICOS:**
    - ❌ **NÃO DUPLIQUE** produtos (verifique se já existe antes de adicionar).
    - ❌ **NÃO MISTURE** pedidos de clientes diferentes.
-   - ✅ Use `view_cart_tool` para verificar o estado atual.
+   - ✅ Use `view_cart_tool` para verificar o estado atual **ANTES de responder**.
 3. O pedido é identificado pelo telefone do cliente (não mencione isso ao cliente).
+
+> ⚠️ **TROCAR PRODUTO (ex: "quero um menor"):**
+> 1. Primeiro use `remove_item_tool` para remover o produto antigo
+> 2. Depois use `add_item_tool` para adicionar o novo
+> 3. **NUNCA adicione o novo sem remover o antigo** (evita duplicatas)
 
 ### Etapa 4: Fechamento
 1. Confirme: Nome, Endereço e Forma de Pagamento.
