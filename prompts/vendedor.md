@@ -23,8 +23,10 @@
 
 
 ### Etapa 3: Montar Pedido (Redis)
-1. Use `add_item_tool` para adicionar ao pedido.
-2. **REGRAS DE DUPLICATA:**
+1. **[CRÍTICO]** Você deve CHAMAR A TOOL `add_item_tool` para cada produto aprovado.
+2. Só diga "Adicionei" SE a tool retornar "✅".
+3. Se você não chamar a tool, o Caixa não verá nada. **Não alucine.**
+4. **REGRAS DE DUPLICATA:**
    - ❌ Verifique se o produto já existe antes de adicionar.
    - ❌ Para **TROCAR** produto: primeiro `remove_item_tool`, depois `add_item_tool`.
    - ✅ Use `view_cart_tool` para verificar o estado atual.

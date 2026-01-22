@@ -292,14 +292,18 @@ def mark_order_sent(telefone: str, order_id: str = None) -> bool:
         session["sent_at"] = datetime.now().isoformat()
         session["order_id"] = order_id
         
-        client.set(key, json.dumps(session), ex=MODIFICATION_TTL)
+        client.set(key, json.dumps(session), ex=MODIFICATION_TTL) # 15 min TTL na sessão
+        
+        # Manter Carrinho e Comprovante vivos pela mesma janela de 15min
+        client.expire(cart_key(telefone), MODIFICATION_TTL)
+        client.expire(comprovante_key(telefone), MODIFICATION_TTL)
         
         # Marcar que pedido foi completado (TTL 2 horas)
         # Isso evita a mensagem "pedido não finalizado" quando cliente voltar
         completed_key = f"order_completed:{telefone}"
         client.set(completed_key, "1", ex=7200)  # 2 horas
         
-        logger.info(f"✅ Pedido marcado como enviado para {telefone} (TTL modificação: {MODIFICATION_TTL//60}min)")
+        logger.info(f"✅ Pedido marcado como enviado para {telefone} (Janela de alteração: 15min)")
         return True
     except Exception as e:
         logger.error(f"Erro ao marcar pedido como enviado: {e}")

@@ -338,9 +338,14 @@ def finalizar_pedido_tool(cliente: str, telefone: str, endereco: str, forma_paga
     result = pedidos(json_body)
     
     if "sucesso" in result.lower() or "✅" in result:
-        clear_cart(telefone)
-        clear_comprovante(telefone)
-        mark_order_sent(telefone)
+        # NÃO LIMPAR O CARRINHO AQUI!
+        # O carrinho deve persistir por 15 minutos (TTL do Redis) para permitir alterações.
+        # clear_cart(telefone) -> REMOVIDO
+        
+        # O comprovante pode ser limpo ou não? Melhor manter por segurança, mas o pedido já foi.
+        # clear_comprovante(telefone) -> REMOVIDO (TTL cuida disso)
+        
+        mark_order_sent(telefone, result) # Atualiza o status da sessão para 'sent'
         
         return f"{result}\n\n💰 **Valor Total Processado:** R$ {total:.2f}\n(O agente DEVE usar este valor na resposta)"
         
