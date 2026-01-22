@@ -116,7 +116,18 @@ def add_item_tool(telefone: str, produto: str, quantidade: float = 1.0, observac
                 quantidade = novo_peso
                 logger.info(f"⚖️ [ADD_ITEM] Peso calculado: {unidades} unidades × {peso_unitario}kg = {quantidade}kg")
     
-    success = add_item_to_cart(telefone, produto, quantidade, observacao, preco, unidades)
+    # Construir JSON do item para add_item_to_cart
+    import json
+    item_data = {
+        "produto": produto,
+        "quantidade": quantidade,
+        "observacao": observacao,
+        "preco": preco,
+        "unidades": unidades
+    }
+    item_json = json.dumps(item_data, ensure_ascii=False)
+    
+    success = add_item_to_cart(telefone, item_json)
     if success:
         if unidades > 0:
             # Calcular valor estimado TOTAL para ajudar o LLM
