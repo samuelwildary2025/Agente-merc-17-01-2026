@@ -526,7 +526,29 @@ def vendedor_node(state: AgentState) -> dict:
     
     # Extrair resposta
     response = _extract_response(result)
-    
+
+    # --- TRAVA DE ALUCINAÇÃO (SAFETY CHECK) ---
+    # Verifica se o agente disse que adicionou, mas NÃO chamou a tool
+    if "adicionei" in response.lower() or "adicionado" in response.lower():
+        tool_called = False
+        messages = result.get("messages", [])
+        for msg in reversed(messages):
+            if isinstance(msg, AIMessage) and hasattr(msg, 'tool_calls') and msg.tool_calls:
+                for call in msg.tool_calls:
+                    if call['name'] == 'add_item_tool':
+                        tool_called = True
+                        break
+            if tool_called: break
+        
+        if not tool_called:
+            logger.warning("⚠️ ALUCINAÇÃO DETECTADA: Agente disse que adicionou mas não chamou a tool.")
+            # Forçar uma resposta de erro para o próprio agente corrigir
+            response = "❌ ERRO DE SISTEMA: Você disse que adicionou, mas NENHUM item foi registrado no carrinho. Você DEVE chamar `add_item_tool` com os argumentos corretos agora. Tente novamente."
+            # Opcional: Poderíamos retentar automaticamente, mas por enquanto vamos alterar a resposta final para o usuário não ser enganado
+            # Ou melhor: vamos injetar essa mensagem como se fosse o sistema e rodar de novo (loop).
+            # Para simplificar na V5, vamos apenas alterar a resposta final alertando o erro.
+            response = "Desculpe, tive um erro técnico ao salvar no carrinho. Vou tentar novamente. O que você pediu mesmo?"
+
     logger.info(f"👩‍💼 [VENDEDOR] Resposta: {response[:100]}...")
     
     return {
