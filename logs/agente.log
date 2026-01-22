@@ -146,3 +146,195 @@
 {"asctime": "2026-01-18 13:49:56", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a0\ufe0f [RETRY] Score baixo (0.037), tentando busca por palavras individuais"}
 {"asctime": "2026-01-18 13:49:56", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 20 resultados com FlashRank..."}
 {"asctime": "2026-01-18 13:49:57", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 0.412 -> Novo: 0.986"}
+{"asctime": "2026-01-22 08:57:35", "name": "tools.search_agent", "levelname": "INFO", "message": "\ud83d\udd75\ufe0f [SUB-AGENT] Iniciando busca especialista para: ['arroz', 'feijao']"}
+{"asctime": "2026-01-22 08:57:35", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'arroz'"}
+{"asctime": "2026-01-22 08:57:36", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'arroz' \u2192 'arroz'"}
+{"asctime": "2026-01-22 08:57:37", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 08:57:37", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 10 resultados com FlashRank..."}
+{"asctime": "2026-01-22 08:57:37", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 0.999 -> Novo: 0.999"}
+{"asctime": "2026-01-22 08:57:38", "name": "tools.search_agent", "levelname": "ERROR", "message": "\u274c [SUB-AGENT] Erro no processamento LLM para 'arroz': Error code: 401 - {'error': {'message': 'Incorrect API key provided: xai-qU60************************************************************************FBLz. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}"}
+{"asctime": "2026-01-22 08:57:38", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'feijao'"}
+{"asctime": "2026-01-22 08:57:38", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'feijao' \u2192 'feijao'"}
+{"asctime": "2026-01-22 08:57:39", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 08:57:39", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 10 resultados com FlashRank..."}
+{"asctime": "2026-01-22 08:57:39", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 0.999 -> Novo: 1.000"}
+{"asctime": "2026-01-22 08:57:39", "name": "tools.search_agent", "levelname": "ERROR", "message": "\u274c [SUB-AGENT] Erro no processamento LLM para 'feijao': Error code: 401 - {'error': {'message': 'Incorrect API key provided: xai-qU60************************************************************************FBLz. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}"}
+{"asctime": "2026-01-22 08:57:39", "name": "tools.search_agent", "levelname": "INFO", "message": "\ud83d\udd75\ufe0f [SUB-AGENT] Iniciando busca especialista para: ['leite']"}
+{"asctime": "2026-01-22 08:57:39", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'leite'"}
+{"asctime": "2026-01-22 08:57:40", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'leite' \u2192 'leite'"}
+{"asctime": "2026-01-22 08:57:41", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 08:57:41", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 9 resultados com FlashRank..."}
+{"asctime": "2026-01-22 08:57:41", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 0.942 -> Novo: 0.983"}
+{"asctime": "2026-01-22 08:57:41", "name": "tools.search_agent", "levelname": "ERROR", "message": "\u274c [SUB-AGENT] Erro no processamento LLM para 'leite': Error code: 401 - {'error': {'message': 'Incorrect API key provided: xai-qU60************************************************************************FBLz. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}"}
+{"asctime": "2026-01-22 08:57:41", "name": "tools.search_agent", "levelname": "INFO", "message": "\ud83d\udd75\ufe0f [SUB-AGENT] Iniciando busca especialista para: ['coca cola zero']"}
+{"asctime": "2026-01-22 08:57:41", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd04 [TRADU\u00c7\u00c3O] 'coca cola' \u2192 'refrig coca cola pet'"}
+{"asctime": "2026-01-22 08:57:41", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'refrig coca cola pet'"}
+{"asctime": "2026-01-22 08:57:42", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'refrig coca cola pet' \u2192 'refrig coca cola pet'"}
+{"asctime": "2026-01-22 08:57:43", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 08:57:43", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 10 resultados com FlashRank..."}
+{"asctime": "2026-01-22 08:57:43", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 1.000 -> Novo: 1.000"}
+{"asctime": "2026-01-22 08:57:43", "name": "tools.search_agent", "levelname": "ERROR", "message": "\u274c [SUB-AGENT] Erro no processamento LLM para 'coca cola zero': Error code: 401 - {'error': {'message': 'Incorrect API key provided: xai-qU60************************************************************************FBLz. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}"}
+{"asctime": "2026-01-22 08:57:43", "name": "tools.search_agent", "levelname": "INFO", "message": "\ud83d\udd75\ufe0f [SUB-AGENT] Iniciando busca especialista para: ['pao']"}
+{"asctime": "2026-01-22 08:57:43", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'pao'"}
+{"asctime": "2026-01-22 08:57:44", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'pao' \u2192 'pao'"}
+{"asctime": "2026-01-22 08:57:45", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 08:57:45", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 6 resultados com FlashRank..."}
+{"asctime": "2026-01-22 08:57:45", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 0.850 -> Novo: 0.971"}
+{"asctime": "2026-01-22 08:57:45", "name": "tools.search_agent", "levelname": "ERROR", "message": "\u274c [SUB-AGENT] Erro no processamento LLM para 'pao': Error code: 401 - {'error': {'message': 'Incorrect API key provided: xai-qU60************************************************************************FBLz. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}"}
+{"asctime": "2026-01-22 08:58:11", "name": "tools.search_agent", "levelname": "INFO", "message": "\ud83d\udd75\ufe0f [SUB-AGENT] Iniciando busca especialista para: ['arroz', 'feijao']"}
+{"asctime": "2026-01-22 08:58:11", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'arroz'"}
+{"asctime": "2026-01-22 08:58:12", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'arroz' \u2192 'arroz'"}
+{"asctime": "2026-01-22 08:58:13", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 08:58:13", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 10 resultados com FlashRank..."}
+{"asctime": "2026-01-22 08:58:13", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 0.999 -> Novo: 0.999"}
+{"asctime": "2026-01-22 08:58:14", "name": "tools.search_agent", "levelname": "ERROR", "message": "\u274c [SUB-AGENT] Erro no processamento LLM para 'arroz': Error code: 404 - {'code': 'Some requested entity was not found', 'error': \"The model gpt-4o-mini does not exist or your team c362d2c2-bb6e-4660-b44f-7db159bc4c37 does not have access to it. Please ensure you're using the correct API key. If you believe this is a mistake, please contact support and quote your team ID and the model name.\"}"}
+{"asctime": "2026-01-22 08:58:14", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'feijao'"}
+{"asctime": "2026-01-22 08:58:15", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'feijao' \u2192 'feijao'"}
+{"asctime": "2026-01-22 08:58:15", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 08:58:15", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 10 resultados com FlashRank..."}
+{"asctime": "2026-01-22 08:58:15", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 0.999 -> Novo: 1.000"}
+{"asctime": "2026-01-22 08:58:16", "name": "tools.search_agent", "levelname": "ERROR", "message": "\u274c [SUB-AGENT] Erro no processamento LLM para 'feijao': Error code: 404 - {'code': 'Some requested entity was not found', 'error': \"The model gpt-4o-mini does not exist or your team c362d2c2-bb6e-4660-b44f-7db159bc4c37 does not have access to it. Please ensure you're using the correct API key. If you believe this is a mistake, please contact support and quote your team ID and the model name.\"}"}
+{"asctime": "2026-01-22 08:58:16", "name": "tools.search_agent", "levelname": "INFO", "message": "\ud83d\udd75\ufe0f [SUB-AGENT] Iniciando busca especialista para: ['leite']"}
+{"asctime": "2026-01-22 08:58:16", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'leite'"}
+{"asctime": "2026-01-22 08:58:16", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'leite' \u2192 'leite'"}
+{"asctime": "2026-01-22 08:58:17", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 08:58:17", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 9 resultados com FlashRank..."}
+{"asctime": "2026-01-22 08:58:17", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 0.942 -> Novo: 0.983"}
+{"asctime": "2026-01-22 08:58:17", "name": "tools.search_agent", "levelname": "ERROR", "message": "\u274c [SUB-AGENT] Erro no processamento LLM para 'leite': Error code: 404 - {'code': 'Some requested entity was not found', 'error': \"The model gpt-4o-mini does not exist or your team c362d2c2-bb6e-4660-b44f-7db159bc4c37 does not have access to it. Please ensure you're using the correct API key. If you believe this is a mistake, please contact support and quote your team ID and the model name.\"}"}
+{"asctime": "2026-01-22 08:58:17", "name": "tools.search_agent", "levelname": "INFO", "message": "\ud83d\udd75\ufe0f [SUB-AGENT] Iniciando busca especialista para: ['coca cola zero']"}
+{"asctime": "2026-01-22 08:58:17", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd04 [TRADU\u00c7\u00c3O] 'coca cola' \u2192 'refrig coca cola pet'"}
+{"asctime": "2026-01-22 08:58:17", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'refrig coca cola pet'"}
+{"asctime": "2026-01-22 08:58:18", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'refrig coca cola pet' \u2192 'refrig coca cola pet'"}
+{"asctime": "2026-01-22 08:58:19", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 08:58:19", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 10 resultados com FlashRank..."}
+{"asctime": "2026-01-22 08:58:19", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 1.000 -> Novo: 1.000"}
+{"asctime": "2026-01-22 08:58:19", "name": "tools.search_agent", "levelname": "ERROR", "message": "\u274c [SUB-AGENT] Erro no processamento LLM para 'coca cola zero': Error code: 404 - {'code': 'Some requested entity was not found', 'error': \"The model gpt-4o-mini does not exist or your team c362d2c2-bb6e-4660-b44f-7db159bc4c37 does not have access to it. Please ensure you're using the correct API key. If you believe this is a mistake, please contact support and quote your team ID and the model name.\"}"}
+{"asctime": "2026-01-22 08:58:19", "name": "tools.search_agent", "levelname": "INFO", "message": "\ud83d\udd75\ufe0f [SUB-AGENT] Iniciando busca especialista para: ['pao']"}
+{"asctime": "2026-01-22 08:58:19", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'pao'"}
+{"asctime": "2026-01-22 08:58:19", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'pao' \u2192 'pao'"}
+{"asctime": "2026-01-22 08:58:20", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 08:58:20", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 6 resultados com FlashRank..."}
+{"asctime": "2026-01-22 08:58:20", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 0.850 -> Novo: 0.971"}
+{"asctime": "2026-01-22 08:58:20", "name": "tools.search_agent", "levelname": "ERROR", "message": "\u274c [SUB-AGENT] Erro no processamento LLM para 'pao': Error code: 404 - {'code': 'Some requested entity was not found', 'error': \"The model gpt-4o-mini does not exist or your team c362d2c2-bb6e-4660-b44f-7db159bc4c37 does not have access to it. Please ensure you're using the correct API key. If you believe this is a mistake, please contact support and quote your team ID and the model name.\"}"}
+{"asctime": "2026-01-22 08:58:56", "name": "tools.search_agent", "levelname": "INFO", "message": "\ud83d\udd75\ufe0f [SUB-AGENT] Iniciando busca especialista para: ['arroz', 'feijao']"}
+{"asctime": "2026-01-22 08:58:56", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'arroz'"}
+{"asctime": "2026-01-22 08:58:57", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'arroz' \u2192 'arroz'"}
+{"asctime": "2026-01-22 08:58:57", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 08:58:57", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 10 resultados com FlashRank..."}
+{"asctime": "2026-01-22 08:58:58", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 0.999 -> Novo: 0.999"}
+{"asctime": "2026-01-22 08:59:02", "name": "tools.http_tools", "levelname": "INFO", "message": "Consultando estoque_preco por EAN: http://45.178.95.233:5001/api/Produto/GetProdutosEAN/7896220900359"}
+{"asctime": "2026-01-22 08:59:02", "name": "tools.search_agent", "levelname": "ERROR", "message": "\u274c [SUB-AGENT] Erro no processamento LLM para 'arroz': unsupported operand type(s) for |: 'type' and 'NoneType'"}
+{"asctime": "2026-01-22 08:59:02", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'feijao'"}
+{"asctime": "2026-01-22 08:59:03", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'feijao' \u2192 'feijao'"}
+{"asctime": "2026-01-22 08:59:04", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 08:59:04", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 10 resultados com FlashRank..."}
+{"asctime": "2026-01-22 08:59:04", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 0.999 -> Novo: 1.000"}
+{"asctime": "2026-01-22 08:59:08", "name": "tools.http_tools", "levelname": "INFO", "message": "Consultando estoque_preco por EAN: http://45.178.95.233:5001/api/Produto/GetProdutosEAN/7898926342624"}
+{"asctime": "2026-01-22 08:59:08", "name": "tools.search_agent", "levelname": "ERROR", "message": "\u274c [SUB-AGENT] Erro no processamento LLM para 'feijao': unsupported operand type(s) for |: 'type' and 'NoneType'"}
+{"asctime": "2026-01-22 08:59:08", "name": "tools.search_agent", "levelname": "INFO", "message": "\ud83d\udd75\ufe0f [SUB-AGENT] Iniciando busca especialista para: ['leite']"}
+{"asctime": "2026-01-22 08:59:08", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'leite'"}
+{"asctime": "2026-01-22 08:59:09", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'leite' \u2192 'leite'"}
+{"asctime": "2026-01-22 08:59:09", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 08:59:09", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 9 resultados com FlashRank..."}
+{"asctime": "2026-01-22 08:59:09", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 0.942 -> Novo: 0.983"}
+{"asctime": "2026-01-22 08:59:14", "name": "tools.http_tools", "levelname": "INFO", "message": "Consultando estoque_preco por EAN: http://45.178.95.233:5001/api/Produto/GetProdutosEAN/7898403780918"}
+{"asctime": "2026-01-22 08:59:14", "name": "tools.search_agent", "levelname": "ERROR", "message": "\u274c [SUB-AGENT] Erro no processamento LLM para 'leite': unsupported operand type(s) for |: 'type' and 'NoneType'"}
+{"asctime": "2026-01-22 08:59:14", "name": "tools.search_agent", "levelname": "INFO", "message": "\ud83d\udd75\ufe0f [SUB-AGENT] Iniciando busca especialista para: ['coca cola zero']"}
+{"asctime": "2026-01-22 08:59:14", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd04 [TRADU\u00c7\u00c3O] 'coca cola' \u2192 'refrig coca cola pet'"}
+{"asctime": "2026-01-22 08:59:14", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'refrig coca cola pet'"}
+{"asctime": "2026-01-22 08:59:15", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'refrig coca cola pet' \u2192 'refrig coca cola pet'"}
+{"asctime": "2026-01-22 08:59:15", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 08:59:15", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 10 resultados com FlashRank..."}
+{"asctime": "2026-01-22 08:59:15", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 1.000 -> Novo: 1.000"}
+{"asctime": "2026-01-22 08:59:16", "name": "tools.search_agent", "levelname": "INFO", "message": "\ud83d\udd75\ufe0f [SUB-AGENT] Iniciando busca especialista para: ['pao']"}
+{"asctime": "2026-01-22 08:59:16", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'pao'"}
+{"asctime": "2026-01-22 08:59:16", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'pao' \u2192 'pao'"}
+{"asctime": "2026-01-22 08:59:17", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 08:59:17", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 6 resultados com FlashRank..."}
+{"asctime": "2026-01-22 08:59:17", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 0.850 -> Novo: 0.971"}
+{"asctime": "2026-01-22 08:59:21", "name": "tools.http_tools", "levelname": "INFO", "message": "Consultando estoque_preco por EAN: http://45.178.95.233:5001/api/Produto/GetProdutosEAN/7896280600855"}
+{"asctime": "2026-01-22 08:59:21", "name": "tools.search_agent", "levelname": "ERROR", "message": "\u274c [SUB-AGENT] Erro no processamento LLM para 'pao': unsupported operand type(s) for |: 'type' and 'NoneType'"}
+{"asctime": "2026-01-22 09:00:12", "name": "tools.search_agent", "levelname": "INFO", "message": "\ud83d\udd75\ufe0f [SUB-AGENT] Iniciando busca especialista para: ['arroz', 'feijao']"}
+{"asctime": "2026-01-22 09:00:12", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'arroz'"}
+{"asctime": "2026-01-22 09:00:13", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'arroz' \u2192 'arroz'"}
+{"asctime": "2026-01-22 09:00:13", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 09:00:13", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 10 resultados com FlashRank..."}
+{"asctime": "2026-01-22 09:00:14", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 0.999 -> Novo: 0.999"}
+{"asctime": "2026-01-22 09:00:19", "name": "tools.http_tools", "levelname": "INFO", "message": "Consultando estoque_preco por EAN: http://45.178.95.233:5001/api/Produto/GetProdutosEAN/7896220900359"}
+{"asctime": "2026-01-22 09:00:19", "name": "tools.http_tools", "levelname": "INFO", "message": "EAN 7896220900359: 1 item(s) dispon\u00edveis ap\u00f3s filtragem"}
+{"asctime": "2026-01-22 09:00:19", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'feijao'"}
+{"asctime": "2026-01-22 09:00:19", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'feijao' \u2192 'feijao'"}
+{"asctime": "2026-01-22 09:00:20", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 09:00:20", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 10 resultados com FlashRank..."}
+{"asctime": "2026-01-22 09:00:20", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 0.999 -> Novo: 1.000"}
+{"asctime": "2026-01-22 09:00:28", "name": "tools.http_tools", "levelname": "INFO", "message": "Consultando estoque_preco por EAN: http://45.178.95.233:5001/api/Produto/GetProdutosEAN/7898926342624"}
+{"asctime": "2026-01-22 09:00:28", "name": "tools.http_tools", "levelname": "INFO", "message": "EAN 7898926342624: 1 item(s) dispon\u00edveis ap\u00f3s filtragem"}
+{"asctime": "2026-01-22 09:00:28", "name": "tools.search_agent", "levelname": "INFO", "message": "\ud83d\udd75\ufe0f [SUB-AGENT] Iniciando busca especialista para: ['leite']"}
+{"asctime": "2026-01-22 09:00:28", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'leite'"}
+{"asctime": "2026-01-22 09:00:28", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'leite' \u2192 'leite'"}
+{"asctime": "2026-01-22 09:00:29", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 09:00:29", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 9 resultados com FlashRank..."}
+{"asctime": "2026-01-22 09:00:29", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 0.942 -> Novo: 0.983"}
+{"asctime": "2026-01-22 09:00:34", "name": "tools.http_tools", "levelname": "INFO", "message": "Consultando estoque_preco por EAN: http://45.178.95.233:5001/api/Produto/GetProdutosEAN/7898403780918"}
+{"asctime": "2026-01-22 09:00:34", "name": "tools.http_tools", "levelname": "INFO", "message": "EAN 7898403780918: 1 item(s) dispon\u00edveis ap\u00f3s filtragem"}
+{"asctime": "2026-01-22 09:00:34", "name": "tools.search_agent", "levelname": "INFO", "message": "\ud83d\udd75\ufe0f [SUB-AGENT] Iniciando busca especialista para: ['coca cola zero']"}
+{"asctime": "2026-01-22 09:00:34", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd04 [TRADU\u00c7\u00c3O] 'coca cola' \u2192 'refrig coca cola pet'"}
+{"asctime": "2026-01-22 09:00:34", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'refrig coca cola pet'"}
+{"asctime": "2026-01-22 09:00:35", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'refrig coca cola pet' \u2192 'refrig coca cola pet'"}
+{"asctime": "2026-01-22 09:00:35", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 09:00:35", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 10 resultados com FlashRank..."}
+{"asctime": "2026-01-22 09:00:35", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 1.000 -> Novo: 1.000"}
+{"asctime": "2026-01-22 09:00:36", "name": "tools.search_agent", "levelname": "INFO", "message": "\ud83d\udd75\ufe0f [SUB-AGENT] Iniciando busca especialista para: ['pao']"}
+{"asctime": "2026-01-22 09:00:36", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'pao'"}
+{"asctime": "2026-01-22 09:00:37", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'pao' \u2192 'pao'"}
+{"asctime": "2026-01-22 09:00:38", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 09:00:38", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 6 resultados com FlashRank..."}
+{"asctime": "2026-01-22 09:00:38", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 0.850 -> Novo: 0.971"}
+{"asctime": "2026-01-22 09:00:43", "name": "tools.http_tools", "levelname": "INFO", "message": "Consultando estoque_preco por EAN: http://45.178.95.233:5001/api/Produto/GetProdutosEAN/7896280600855"}
+{"asctime": "2026-01-22 09:00:43", "name": "tools.http_tools", "levelname": "INFO", "message": "EAN 7896280600855: 1 item(s) dispon\u00edveis ap\u00f3s filtragem"}
+{"asctime": "2026-01-22 12:11:17", "name": "agent_multiagent", "levelname": "INFO", "message": "[MULTI-AGENT] Telefone: 5511999999999 | Msg: Ol\u00e1, tem cerveja heineken?..."}
+{"asctime": "2026-01-22 12:11:18", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83d\udcda Hist\u00f3rico: 0 mensagens anteriores"}
+{"asctime": "2026-01-22 12:11:18", "name": "tools.time_tool", "levelname": "INFO", "message": "Hora atual consultada: \ud83d\udcc5 Quinta-feira, 22/01/2026 \u00e0s 12:11:18 (-03)"}
+{"asctime": "2026-01-22 12:11:18", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83d\udce8 Enviando 1 mensagens para o grafo"}
+{"asctime": "2026-01-22 12:11:18", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83e\udde0 [ORCHESTRATOR] Analisando inten\u00e7\u00e3o..."}
+{"asctime": "2026-01-22 12:11:18", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83d\udcc4 Carregando prompt: /Users/samuel/Desktop/AGENTE-MERC-07-01-2026-main 2/prompts/orchestrator.md"}
+{"asctime": "2026-01-22 12:11:19", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83e\udde0 [ORCHESTRATOR] Inten\u00e7\u00e3o detectada: vendas (raw: 'vendas')"}
+{"asctime": "2026-01-22 12:11:19", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83d\udc69\u200d\ud83d\udcbc [VENDEDOR] Processando..."}
+{"asctime": "2026-01-22 12:11:19", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83d\udcc4 Carregando prompt: /Users/samuel/Desktop/AGENTE-MERC-07-01-2026-main 2/prompts/vendedor.md"}
+{"asctime": "2026-01-22 12:11:22", "name": "tools.search_agent", "levelname": "INFO", "message": "\ud83d\udd75\ufe0f [SUB-AGENT] Iniciando busca especialista para: ['cerveja heineken']"}
+{"asctime": "2026-01-22 12:11:22", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd04 [TRADU\u00c7\u00c3O] 'heineken' \u2192 'cerveja heineken lt'"}
+{"asctime": "2026-01-22 12:11:22", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'cerveja heineken lt'"}
+{"asctime": "2026-01-22 12:11:23", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'cerveja heineken lt' \u2192 'cerveja heineken lt'"}
+{"asctime": "2026-01-22 12:11:34", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 12:11:34", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 10 resultados com FlashRank..."}
+{"asctime": "2026-01-22 12:11:34", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 1.000 -> Novo: 1.000"}
+{"asctime": "2026-01-22 12:11:37", "name": "tools.http_tools", "levelname": "INFO", "message": "Consultando estoque_preco por EAN: http://45.178.95.233:5001/api/Produto/GetProdutosEAN/7896045506880"}
+{"asctime": "2026-01-22 12:11:38", "name": "tools.http_tools", "levelname": "INFO", "message": "EAN 7896045506880: 1 item(s) dispon\u00edveis ap\u00f3s filtragem"}
+{"asctime": "2026-01-22 12:11:40", "name": "tools.http_tools", "levelname": "INFO", "message": "Consultando estoque_preco por EAN: http://45.178.95.233:5001/api/Produto/GetProdutosEAN/350"}
+{"asctime": "2026-01-22 12:11:40", "name": "tools.http_tools", "levelname": "INFO", "message": "EAN 350: 0 item(s) dispon\u00edveis ap\u00f3s filtragem"}
+{"asctime": "2026-01-22 12:11:42", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83d\udc69\u200d\ud83d\udcbc [VENDEDOR] Resposta: Ol\u00e1! Sou a Ana, do Mercadinho Queiroz. Sim, temos **Cerveja Heineken 350ml** a *R$ 5,79*.\n\nQuantas v..."}
+{"asctime": "2026-01-22 12:11:42", "name": "agent_multiagent", "levelname": "INFO", "message": "\u2705 [MULTI-AGENT] Resposta: Ol\u00e1! Sou a Ana, do Mercadinho Queiroz. Sim, temos **Cerveja Heineken 350ml** a *R$ 5,79*.\n\nQuantas voc\u00ea quer no pedido?..."}
+{"asctime": "2026-01-22 12:11:43", "name": "agent_multiagent", "levelname": "INFO", "message": "[MULTI-AGENT] Telefone: 5511999999999 | Msg: Pode fechar a conta..."}
+{"asctime": "2026-01-22 12:11:44", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83d\udcda Hist\u00f3rico: 2 mensagens anteriores"}
+{"asctime": "2026-01-22 12:11:44", "name": "tools.time_tool", "levelname": "INFO", "message": "Hora atual consultada: \ud83d\udcc5 Quinta-feira, 22/01/2026 \u00e0s 12:11:44 (-03)"}
+{"asctime": "2026-01-22 12:11:44", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83d\udce8 Enviando 3 mensagens para o grafo"}
+{"asctime": "2026-01-22 12:11:44", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83e\udde0 [ORCHESTRATOR] Analisando inten\u00e7\u00e3o..."}
+{"asctime": "2026-01-22 12:11:44", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83d\udcc4 Carregando prompt: /Users/samuel/Desktop/AGENTE-MERC-07-01-2026-main 2/prompts/orchestrator.md"}
+{"asctime": "2026-01-22 12:11:46", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83e\udde0 [ORCHESTRATOR] Inten\u00e7\u00e3o detectada: checkout (raw: 'checkout')"}
+{"asctime": "2026-01-22 12:11:46", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83d\udcb0 [CAIXA] Processando..."}
+{"asctime": "2026-01-22 12:11:46", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83d\udcc4 Carregando prompt: /Users/samuel/Desktop/AGENTE-MERC-07-01-2026-main 2/prompts/caixa.md"}
+{"asctime": "2026-01-22 12:11:48", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83d\udcb0 [CAIXA] Resposta: Certo! Para finalizar, preciso de:\n\u2022 Seu *nome*\n\u2022 *Endere\u00e7o* completo (rua, n\u00famero, bairro)\n\u2022 *Forma..."}
+{"asctime": "2026-01-22 12:11:48", "name": "agent_multiagent", "levelname": "INFO", "message": "\u2705 [MULTI-AGENT] Resposta: Certo! Para finalizar, preciso de:\n\u2022 Seu *nome*\n\u2022 *Endere\u00e7o* completo (rua, n\u00famero, bairro)\n\u2022 *Forma de pagamento* (PIX, Cart\u00e3o ou Dinheiro)..."}
+{"asctime": "2026-01-22 12:11:49", "name": "agent_multiagent", "levelname": "INFO", "message": "[MULTI-AGENT] Telefone: 5511999999999 | Msg: Moro na Rua S\u00e3o Jo\u00e3o, 112, Centro..."}
+{"asctime": "2026-01-22 12:11:50", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83d\udcda Hist\u00f3rico: 4 mensagens anteriores"}
+{"asctime": "2026-01-22 12:11:50", "name": "tools.time_tool", "levelname": "INFO", "message": "Hora atual consultada: \ud83d\udcc5 Quinta-feira, 22/01/2026 \u00e0s 12:11:50 (-03)"}
+{"asctime": "2026-01-22 12:11:50", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83d\udce8 Enviando 5 mensagens para o grafo"}
+{"asctime": "2026-01-22 12:11:50", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83e\udde0 [ORCHESTRATOR] Analisando inten\u00e7\u00e3o..."}
+{"asctime": "2026-01-22 12:11:50", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83d\udcc4 Carregando prompt: /Users/samuel/Desktop/AGENTE-MERC-07-01-2026-main 2/prompts/orchestrator.md"}
+{"asctime": "2026-01-22 12:11:51", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83e\udde0 [ORCHESTRATOR] Inten\u00e7\u00e3o detectada: checkout (raw: 'checkout')"}
+{"asctime": "2026-01-22 12:11:51", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83d\udcb0 [CAIXA] Processando..."}
+{"asctime": "2026-01-22 12:11:51", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83d\udcc4 Carregando prompt: /Users/samuel/Desktop/AGENTE-MERC-07-01-2026-main 2/prompts/caixa.md"}
+{"asctime": "2026-01-22 12:11:53", "name": "tools.redis_tools", "levelname": "ERROR", "message": "Erro ao conectar ao Redis: Error 8 connecting to projeto_queiroz_redis_agente:6379. nodename nor servname provided, or not known."}
+{"asctime": "2026-01-22 12:11:58", "name": "tools.redis_tools", "levelname": "ERROR", "message": "Erro ao conectar ao Redis: Error 8 connecting to projeto_queiroz_redis_agente:6379. nodename nor servname provided, or not known."}
+{"asctime": "2026-01-22 12:11:59", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83d\udcb0 [CAIXA] Resposta: Perfeito! Endere\u00e7o salvo: **Rua S\u00e3o Jo\u00e3o, 112, Centro**.\n\nBairro Centro \u2192 **Frete: R$ 5,00**.\n\nMas s..."}
+{"asctime": "2026-01-22 12:11:59", "name": "agent_multiagent", "levelname": "INFO", "message": "\u2705 [MULTI-AGENT] Resposta: Perfeito! Endere\u00e7o salvo: **Rua S\u00e3o Jo\u00e3o, 112, Centro**.\n\nBairro Centro \u2192 **Frete: R$ 5,00**.\n\nMas seu carrinho est\u00e1 vazio no momento. Para fechar o pedido, adicione itens primeiro comigo!\n\nO que quer..."}

@@ -12,7 +12,7 @@ from arq.connections import RedisSettings
 
 from config.settings import settings
 from config.logger import setup_logger
-from agent_langgraph_simple import run_agent
+from agent_multiagent import run_agent
 from tools.whatsapp_api import WhatsAppAPI
 
 logger = setup_logger(__name__)

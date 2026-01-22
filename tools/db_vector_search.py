@@ -107,8 +107,8 @@ def search_products_vector(query: str, limit: int = 20) -> str:
         "uva", "morango", "manga", "mamao", "abacate", "goiaba", "pera", "pessego",
         "ameixa", "kiwi", "coco", "maracuja", "acerola", "caju", "pitanga",
         "cheiro verde", "coentro", "salsa", "cebolinha", "hortela", "manjericao",
-        "alecrim", "tomilho", "oregano", "louro", "frango", "carne", "peixe",
-        "ovo", "leite", "queijo", "manteiga", "iogurte"
+        "alecrim", "tomilho", "oregano", "louro", 
+       
     ]
     
     # Traduções de termos comuns para abreviações usadas no banco

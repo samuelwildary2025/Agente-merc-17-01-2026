@@ -20,7 +20,8 @@ import os
 
 from config.settings import settings
 from config.logger import setup_logger
-from tools.http_tools import estoque, pedidos, alterar, ean_lookup, estoque_preco, busca_lote_produtos, consultar_encarte
+from tools.http_tools import estoque, pedidos, alterar, ean_lookup, estoque_preco, consultar_encarte
+from tools.search_agent import search_specialist_tool
 from tools.time_tool import get_current_time, search_message_history
 from tools.redis_tools import (
     mark_order_sent, 
@@ -417,20 +418,22 @@ def estoque_preco_alias(ean: str) -> str:
 @tool("busca_lote")
 def busca_lote_tool(produtos: str) -> str:
     """
-    Busca MÚLTIPLOS produtos de uma vez em paralelo. Use quando o cliente pedir vários itens.
+    Ferramenta de BUSCA INTELLIGENTE de produtos (Sub-Agente).
+    Use para encontrar produtos no estoque.
     
     Args:
-        produtos: Lista de produtos separados por vírgula.
-                  Ex: "suco de acerola, suco de caju, arroz, feijão"
+        produtos: Lista de termos de busca separados por vírgula.
+                  Ex: "leite, pão, coca cola 2l"
+                  Ex: "arroz" (busca simples)
     
     Returns:
-        Lista formatada com todos os produtos encontrados e seus preços.
+        Lista validada de produtos encontrados com preços e estoque.
     """
-    # Converter string em lista
-    lista_produtos = [p.strip() for p in produtos.split(",") if p.strip()]
-    if not lista_produtos:
-        return "❌ Informe os produtos separados por vírgula."
-    return busca_lote_produtos(lista_produtos)
+    # Converter string em lista se necessário, mas o especialista aceita string
+    if not produtos or not produtos.strip():
+        return "❌ Informe os produtos para busca."
+        
+    return search_specialist_tool(produtos)
 
 @tool
 def salvar_comprovante_tool(telefone: str, url: str) -> str:

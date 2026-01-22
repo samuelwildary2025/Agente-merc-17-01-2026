@@ -3,7 +3,7 @@ Ferramentas HTTP para interação com a API do Supermercado
 """
 import requests
 import json
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from config.settings import settings
 from config.logger import setup_logger
 from .db_vector_search import search_products_vector
@@ -410,7 +410,7 @@ def estoque_preco(ean: str) -> str:
             # Possíveis indicadores de disponibilidade
             STATUS_KEYS = ("situacao", "situacaoEstoque", "status", "statusEstoque")
 
-            def _parse_float(val) -> float | None:
+            def _parse_float(val) -> Optional[float]:
                 try:
                     s = str(val).strip()
                     if not s:
@@ -476,7 +476,7 @@ def estoque_preco(ean: str) -> str:
                 logger.debug(f"Item filtrado: quantidade={qty} (Categoria: {cat})")
                 return False
 
-            def _extract_qty(d: Dict[str, Any]) -> float | None:
+            def _extract_qty(d: Dict[str, Any]) -> Optional[float]:
                 best_qty = None
                 for k in STOCK_QTY_KEYS:
                     if k in d:
@@ -490,7 +490,7 @@ def estoque_preco(ean: str) -> str:
                             pass
                 return best_qty
 
-            def _extract_price(d: Dict[str, Any]) -> float | None:
+            def _extract_price(d: Dict[str, Any]) -> Optional[float]:
                 for k in PRICE_KEYS:
                     if k in d:
                         val = _parse_float(d.get(k))
@@ -555,312 +555,21 @@ def estoque_preco(ean: str) -> str:
 
 
 # ============================================
-# BUSCA EM LOTE (PARALELA)
+# ANTIGA BUSCA EM LOTE (Descontinuada em favor do Sub-Agente)
 # ============================================
 
 def busca_lote_produtos(produtos: list[str]) -> str:
     """
-    Busca múltiplos produtos em PARALELO para otimizar performance.
-    
-    Em vez de buscar sequencialmente (10s × N produtos), busca todos ao mesmo tempo.
-    
-    Args:
-        produtos: Lista de nomes de produtos para buscar
-        
-    Returns:
-        String formatada com todos os produtos encontrados e seus preços
+    OBSOLETO: Esta função foi substituída pelo `search_specialist_tool` (Sub-Agente).
+    Mantida apenas como stub para evitar quebras se algo antigo chamar.
     """
-    from concurrent.futures import ThreadPoolExecutor, as_completed
-    import time
+    from tools.search_agent import search_specialist_tool
     
-    start_time = time.time()
-    logger.info(f"🚀 Iniciando busca em lote para {len(produtos)} produtos")
-    
-    # Pesos médios para produtos vendidos por kg (para calcular preço estimado)
-    PESO_UNITARIO = {
-        # Padaria
-        "pao frances": 0.050, "pão francês": 0.050, "carioquinha": 0.050, "pao carioquinha": 0.050,
-        "pao sovado": 0.060, "pão sovado": 0.060, "massa fina": 0.060,
-        "mini bolinha": 0.016, "mini coxinha": 0.016,
-        # Hortfruti - Legumes
-        "tomate": 0.150, "cebola": 0.150, "batata": 0.150,
-        "cenoura": 0.100, "pepino": 0.200, "pimentao": 0.150, "pimentão": 0.150,
-        # Carnes e Embutidos
-        "frango inteiro": 2.200, "frango abatido": 2.200,
-        "calabresa": 0.250, "paio": 0.250, "linguica": 0.250, "linguiça": 0.250, "bacon": 0.300,
-        # Frutas
-        "limao": 0.100, "limão": 0.100, "banana": 0.100, "maca": 0.100, "maçã": 0.100,
-        "laranja": 0.200, "mamao": 1.500, "mamão": 1.500, "melancia": 2.000, "abacate": 0.600
-    }
-    
-    # Mapeamento direto de produtos conhecidos que a busca vetorial não encontra bem
-    # Formato: termo_busca → (ean, nome_produto)
-    PRODUTOS_CONHECIDOS = {
-        # Pães
-        "pao carioquinha": ("802", "PAO FRANCES kg"),
-        "carioquinha": ("802", "PAO FRANCES kg"),
-        "carioquinhas": ("802", "PAO FRANCES kg"),
-        "pao frances": ("802", "PAO FRANCES kg"),
-        "pão francês": ("802", "PAO FRANCES kg"),
-        # Salgados de Padaria (prioridade sobre congelados)
-        "coxinha": ("816", "MINI COXINHA PANNEMIX FRANGO kg"),
-        "coxinha de frango": ("816", "MINI COXINHA PANNEMIX FRANGO kg"),
-        "mini coxinha": ("816", "MINI COXINHA PANNEMIX FRANGO kg"),
-        "enroladinho": ("827", "ENROLADINHO SALSICHA"),
-        "enroladinho de salsicha": ("827", "ENROLADINHO SALSICHA"),
-        # Feijão e Café (Garantindo básicos)
-        "feijao": ("7898933603084", "FEIJAO CARIOCA YAN 1kg"),
-        "feijão": ("7898933603084", "FEIJAO CARIOCA YAN 1kg"),
-        "feijao carioca": ("7898933603084", "FEIJAO CARIOCA YAN 1kg"),
-        "feijao de corda": ("7896406001009", "FEIJAO CORDA KI-CALDO 1kg"),
-        "cafe": ("7898286200374", "CAFE PURO 250g"),
-        "café": ("7898286200374", "CAFE PURO 250g"),
-        # Arroz (Garantindo básicos)
-        "arroz": ("7898236717129", "ARROZ BRANCO 101 1kg"),
-        "arroz branco": ("7898236717129", "ARROZ BRANCO 101 1kg"),
-        "arroz tipo 1": ("7898236717129", "ARROZ BRANCO 101 1kg"),
-        "arroz parboilizado": ("7898236717167", "ARROZ PARBOILIZADO 101 1KG"),
-        # Frutas Hortifruti
-        "laranja": ("126", "LARANJA LIMA kg"),
-        "laranjas": ("126", "LARANJA LIMA kg"),
-        # Refrigerantes
-        "coca-cola 2l": ("7894900027013", "REFRIG COCA COLA PET 2L"),
-        "coca-cola 2 litros": ("7894900027013", "REFRIG COCA COLA PET 2L"),
-        "coca cola 2l": ("7894900027013", "REFRIG COCA COLA PET 2L"),
-        "coca cola 2 litros": ("7894900027013", "REFRIG COCA COLA PET 2L"),
-    }
-    
-    def buscar_produto_completo(produto: str) -> dict:
-        """Busca EAN e depois preço de um produto (pode incluir quantidade: '5 tomates')"""
-        try:
-            import re
-            
-            # Extrair quantidade da string (ex: "5 tomates" → quantidade=5, produto="tomates")
-            produto_limpo = produto.strip()
-            quantidade = None
-            match = re.match(r'^([\d]+)\s+(.+)$', produto_limpo)
-            if match:
-                quantidade = int(match.group(1))
-                produto_limpo = match.group(2)
-                logger.info(f"📊 Quantidade detectada: {quantidade}x {produto_limpo}")
-            
-            produto_lower = produto_limpo.lower().strip()
-            
-            # 0. SHORTCUT: Verificar se é um produto conhecido
-            if produto_lower in PRODUTOS_CONHECIDOS:
-                ean, nome = PRODUTOS_CONHECIDOS[produto_lower]
-                logger.info(f"⚡ [SHORTCUT] Produto conhecido: '{produto}' → EAN {ean}")
-                preco_result = estoque_preco(ean)
-                try:
-                    preco_data = json.loads(preco_result)
-                    if preco_data and isinstance(preco_data, list) and len(preco_data) > 0:
-                        item = preco_data[0]
-                        preco = item.get("preco", 0)
-                        logger.info(f"✅ [SHORTCUT] Sucesso: {nome} (R$ {preco})")
-                        return {"produto": nome, "erro": None, "preco": preco, "ean": ean, "quantidade": quantidade}
-                except Exception as e:
-                    logger.warning(f"⚠️ [SHORTCUT] Erro ao consultar preço: {e}")
-            
-            # 1. Buscar EAN (Postgres)
-            # IMPORTANTE: ean_lookup retorna uma string formatada (EANS_ENCONTRADOS: ...)
-            ean_result = ean_lookup(produto)
-            
-            # Se a busca no banco falhou ou não achou nada
-            if "EANS_ENCONTRADOS" not in ean_result:
-                logger.warning(f"❌ [BUSCA LOTE] Banco não retornou resultados para '{produto}'")
-                return {"produto": produto, "erro": "Não encontrado", "preco": None}
-            
-            # 2. Parse da string de retorno do ean_lookup para extrair lista de dicts
-            # Formato esperado: "EANS_ENCONTRADOS:\n1) 123 - PRODUTO A\n2) 456 - PRODUTO B"
-            import re
-            
-            linhas = ean_result.split('\n')
-            candidatos = []
-            
-            for linha in linhas:
-                # Procurar padrão: número) EAN - NOME
-                # Regex flexível para pegar "1) 123 - NOME"
-                match = re.match(r'\d+\)\s*(\d+)\s*-\s*(.+)', linha.strip())
-                if match:
-                    ean = match.group(1)
-                    nome = match.group(2).strip()
-                    candidatos.append({"ean": ean, "nome": nome})
-            
-            if not candidatos:
-                logger.warning(f"❌ [BUSCA LOTE] Falha ao fazer parse dos candidatos para '{produto}'. Texto: {ean_result[:50]}...")
-                return {"produto": produto, "erro": "EAN não extraído", "preco": None}
-            
-            # 3. Encontrar os melhores candidatos (Ranking)
-            PREFERENCIAS = {
-                "frango": ["abatido"],
-                "leite": ["liquido"],
-                "arroz": ["tipo 1"],
-                "acucar": ["cristal"],
-                "feijao": ["carioca", "corda", "branco", "preto"],
-                "oleo": ["soja"],
-                "tomate": ["tomate kg"],
-                "cebola": ["cebola branca", "cebola kg"],  # Prioriza branca
-                "batata": ["batata kg"],
-                "calabresa": ["calabresa kg"],
-                # Padaria - NOVO
-                "pao": ["pao frances", "frances kg"],
-                "carioquinha": ["pao frances", "frances kg"],
-                "frances": ["pao frances", "frances kg"],
-                # Refrigerantes - NOVO
-                "coca": ["coca cola", "coca-cola"],
-                "coca-cola": ["coca cola pet", "coca-cola pet"],
-                "guarana": ["guarana antarctica"],
-            }
-            
-            produto_lower = produto.lower()
-            
-            # Termos de preferência para este produto (se houver)
-            termos_preferidos = []
-            for chave, termos in PREFERENCIAS.items():
-                if chave in produto_lower:
-                    termos_preferidos = termos
-                    break
+    # Redireciona para a nova tool do sub-agente
+    queries_str = ",".join(produtos)
+    return search_specialist_tool(queries_str)
 
-            candidatos_pontuados = []
 
-            for c in candidatos:
-                nome_lower = c["nome"].lower()
-                score = 0
-                
-                # 1. Match de palavras da busca (Base)
-                score += sum(2 for palavra in produto_lower.split() if palavra in nome_lower)
-                
-                # 2. Bonus por match exato da frase
-                if produto_lower in nome_lower:
-                    score += 5
-                
-                # 3. Bonus por Preferências
-                for i, termo in enumerate(termos_preferidos):
-                    if termo in nome_lower:
-                        score += (20 - i)  # Bônus maior (20 em vez de 10)
-                        break
-                
-                # 4. Penalidades para termos que o cliente geralmente não quer por padrão (se a busca for genérica)
-                # Se o usuário NÃO digitou "descaf", mas o produto é descaf, penaliza.
-                PALAVRAS_EVITAR = ["descaf", "soluvel", "desnatado", "condensado", "creme de leite"]
-                if "leite" in produto_lower and "po" not in produto_lower:
-                    PALAVRAS_EVITAR.append(" po ") # Evita leite em pó se a busca for "leite"
-                    PALAVRAS_EVITAR.append(" em pó")
-                
-                if "cafe" in produto_lower or "café" in produto_lower:
-                    PALAVRAS_EVITAR.extend(["curto", "maquina", "expresso", "nespresso", "capsula"])
-
-                if "feijao" in produto_lower:
-                    PALAVRAS_EVITAR.extend(["branco", "preto", "fradinho"])
-                
-                for palavra in PALAVRAS_EVITAR:
-                    if palavra in nome_lower and palavra not in produto_lower:
-                        score -= 20  # Penalidade forte para não sugerir descaf/branco por engano
-                
-                # 5. Penalidade por tamanho (manter baixa para não matar nomes descritivos)
-                score -= len(nome_lower) * 0.02
-                
-                candidatos_pontuados.append((score, c))
-            
-            # 4. ESTRATÉGIA DINÂMICA (Time Budget)
-            # Verifica TODOS os candidatos (até o limite de 20 retornado pelo banco),
-            # MAS para se estourar o tempo de segurança (evitando timeout do WhatsApp).
-            
-            import time
-            item_start_time = time.time()
-            TIME_BUDGET = 20.0 # Segundos máximos por produto (aumentado para permitir retries)
-            
-            for i, (score, candidato) in enumerate(candidatos_pontuados):
-                # Check de tempo
-                if time.time() - item_start_time > TIME_BUDGET:
-                    logger.warning(f"⚠️ [BUSCA LOTE] Tempo esgotado ({TIME_BUDGET}s) para '{produto}'. Parei no candidato {i}.")
-                    break
-                    
-                ean = candidato["ean"]
-                nome_candidato = candidato["nome"]
-                
-                # Log menos verboso para posições avançadas
-                if i < 3:
-                     logger.info(f"👉 [BUSCA LOTE] Tentando #{i+1}: '{nome_candidato}' (EAN: {ean})")
-                
-                try:
-                    preco_result = estoque_preco(ean)
-                    preco_data = json.loads(preco_result)
-                    
-                    if preco_data and isinstance(preco_data, list) and len(preco_data) > 0:
-                        item = preco_data[0]
-                        nome = item.get("produto", item.get("nome", produto))
-                        preco = item.get("preco", 0)
-                        logger.info(f"✅ [BUSCA LOTE] Sucesso com #{i+1} '{nome}' (R$ {preco})")
-                        return {"produto": nome, "erro": None, "preco": preco, "ean": ean, "quantidade": quantidade}
-                except Exception:
-                    pass
-            
-            logger.warning(f"❌ [BUSCA LOTE] Nenhum candidato com estoque encontrado para '{produto}' (Verificados: {len(candidatos_pontuados)})")
-            return {"produto": produto, "erro": "Indisponível (sem estoque)", "preco": None}
-            
-        except Exception as e:
-            logger.error(f"Erro ao buscar {produto}: {e}")
-            return {"produto": produto, "erro": str(e), "preco": None}
-    
-    # Executar buscas em paralelo (máximo 5 threads para não sobrecarregar)
-    resultados = []
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        futures = {executor.submit(buscar_produto_completo, p): p for p in produtos}
-        
-        for future in as_completed(futures):
-            resultado = future.result()
-            resultados.append(resultado)
-    
-    elapsed = time.time() - start_time
-    logger.info(f"✅ Busca em lote concluída em {elapsed:.2f}s para {len(produtos)} produtos")
-    
-    # Formatar resposta (com cálculo de preço estimado para produtos de peso)
-    encontrados = []
-    nao_encontrados = []
-    
-    for r in resultados:
-        if r["preco"] is not None:
-            nome = r['produto']
-            preco_kg = r['preco']
-            quantidade = r.get('quantidade')
-            
-            # Verificar se é produto vendido por peso (kg) e se tem quantidade
-            if quantidade and quantidade > 0:
-                # Tentar encontrar peso unitário para este produto
-                nome_lower = nome.lower()
-                peso_unit = None
-                
-                for chave, peso in PESO_UNITARIO.items():
-                    if chave in nome_lower:
-                        peso_unit = peso
-                        break
-                
-                # Se encontrou peso, calcular preço estimado
-                if peso_unit:
-                    peso_total = quantidade * peso_unit
-                    preco_estimado = peso_total * preco_kg
-                    # Formato: "5 Tomates (~750g) - R$ 4,12"
-                    encontrados.append(f"• {quantidade} {nome.replace(' kg', '').replace(' KG', '')} (~{int(peso_total*1000)}g) - R$ {preco_estimado:.2f}")
-                    logger.info(f"💰 Cálculo: {quantidade}x {nome} × {peso_unit}kg × R${preco_kg:.2f}/kg = R${preco_estimado:.2f}")
-                else:
-                    # Produto de peso mas sem regra de peso unitário - mostrar só quantidade
-                    encontrados.append(f"• {quantidade}x {nome} - R$ {preco_kg:.2f}/kg")
-            else:
-                # Produto unitário normal ou sem quantidade especificada
-                encontrados.append(f"• {nome} - R$ {preco_kg:.2f}")
-        else:
-            nao_encontrados.append(r['produto'])
-    
-    resposta = []
-    if encontrados:
-        resposta.append("PRODUTOS_ENCONTRADOS:")
-        resposta.extend(encontrados)
-    
-    if nao_encontrados:
-        resposta.append(f"\nNÃO_ENCONTRADOS: {', '.join(nao_encontrados)}")
-    
-    return "\n".join(resposta) if resposta else "Nenhum produto encontrado."
 
 
 def consultar_encarte() -> str:

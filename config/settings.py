@@ -81,7 +81,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     log_file: str = "logs/agente.log"
     
-    agent_prompt_path: Optional[str] = "prompts/agent_system_grok.md"
+    agent_prompt_path: Optional[str] = "prompts/vendedor.md"
 
 
 # Instância global de configurações

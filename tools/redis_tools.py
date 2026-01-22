@@ -765,3 +765,14 @@ def clear_address(telefone: str) -> bool:
     except Exception as e:
         logger.error(f"Erro ao limpar endereço: {e}")
         return False
+# ============================================
+# Aliases para compatibilidade com agent_multiagent.py
+# ============================================
+
+def save_address(telefone: str, endereco: str) -> bool:
+    """Alias para set_address"""
+    return set_address(telefone, endereco)
+
+def get_saved_address(telefone: str) -> Optional[str]:
+    """Alias para get_address"""
+    return get_address(telefone)
