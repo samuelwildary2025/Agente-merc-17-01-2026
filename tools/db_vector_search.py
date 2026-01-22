@@ -179,9 +179,17 @@ def search_products_vector(query: str, limit: int = 20) -> str:
         # Normalização de acentos (banco usa sem acento)
         "açúcar": "acucar cristal",
         "açucar": "acucar cristal",
+        "acucar": "acucar cristal",  # SEM ACENTO - priorizar cristal sobre demerara
         "café": "cafe",
         "maçã": "maca",
         "feijão": "feijao",
+        # Café - PRIORIZAR TRADICIONAL sobre descafeinado
+        "cafe pilao": "cafe pilao tradicional 500g",
+        "pilao": "cafe pilao tradicional 500g",
+        "cafe melitta": "cafe melitta tradicional",
+        "melitta": "cafe melitta tradicional",
+        "cafe 3 coracoes": "cafe 3 coracoes tradicional",
+        "3 coracoes": "cafe 3 coracoes tradicional",
         # Cervejas - Corrigido para formato do banco (LT = lata, LN = long neck, GRF = garrafa)
         "cerveja": "cerveja lt 350ml",
         "cerveja lata": "cerveja lt 350ml",
