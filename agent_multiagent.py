@@ -21,7 +21,7 @@ import json
 from config.settings import settings
 from config.logger import setup_logger
 from tools.http_tools import estoque, pedidos, alterar, ean_lookup, estoque_preco, consultar_encarte
-from tools.search_agent import search_specialist_tool
+from tools.search_agent import analista_produtos_tool
 from tools.time_tool import get_current_time, search_message_history
 from tools.redis_tools import (
     mark_order_sent, 
@@ -119,10 +119,13 @@ def add_item_tool(telefone: str, produto: str, quantidade: float = 1.0, observac
     success = add_item_to_cart(telefone, produto, quantidade, observacao, preco, unidades)
     if success:
         if unidades > 0:
-            return f"✅ Adicionado: {unidades}x {produto} (~{quantidade:.3f}kg) - R$ {preco:.2f}/kg"
+            # Calcular valor estimado TOTAL para ajudar o LLM
+            valor_estimado = quantidade * preco
+            return f"✅ Adicionado: {unidades}x {produto} - Total Estimado: R$ {valor_estimado:.2f}. (IMPORTANTE: Avise que o valor final pode variar na balança pois é item de peso)"
         else:
             qtd_int = int(quantidade) if quantidade == int(quantidade) else quantidade
-            return f"✅ Adicionado: {qtd_int}x {produto} - R$ {preco:.2f}"
+            valor_total = quantidade * preco
+            return f"✅ Adicionado: {qtd_int}x {produto} - Total: R$ {valor_total:.2f}"
     return "❌ Erro ao adicionar item."
 
 @tool
@@ -144,7 +147,7 @@ def view_cart_tool(telefone: str) -> str:
         total += valor
         
         if unidades > 0:
-            lines.append(f"{i}. {unidades}x {nome} (~{qtd:.3f}kg) - R$ {valor:.2f}")
+            lines.append(f"{i}. {unidades}x {nome} - Total Estimado: R$ {valor:.2f}")
         else:
             qtd_display = int(qtd) if qtd == int(qtd) else qtd
             lines.append(f"{i}. {qtd_display}x {nome} - R$ {valor:.2f}")
@@ -178,21 +181,17 @@ def estoque_preco_alias(ean: str) -> str:
 @tool("busca_lote")
 def busca_lote_tool(produtos: str) -> str:
     """
-    Ferramenta de BUSCA INTELLIGENTE de produtos (Sub-Agente).
-    Use para encontrar produtos no estoque.
+    [VENDEDOR -> ANALISTA]
+    Ponte para o Analista de Produtos.
+    O Vendedor envia o texto cru do cliente (ex: "arroz, leite"), e o Analista retorna os produtos validados com EAN.
     
     Args:
-        produtos: Lista de termos de busca separados por vírgula.
-                  Ex: "leite, pão, coca cola 2l"
-                  Ex: "arroz" (busca simples)
-    
-    Returns:
-        Lista validada de produtos encontrados com preços e estoque.
+        produtos: Termos de busca.
     """
     if not produtos or not produtos.strip():
-        return "❌ Informe os produtos para busca."
+        return "❌ Informe os produtos para o analista."
         
-    return search_specialist_tool(produtos)
+    return analista_produtos_tool(produtos)
 
 @tool
 def consultar_encarte_tool() -> str:
@@ -364,10 +363,10 @@ def search_history_tool(telefone: str, keyword: str = None) -> str:
 # ============================================
 
 VENDEDOR_TOOLS = [
-    ean_tool_alias,
-    estoque_preco_alias,
+    # ean_tool_alias, -> Removido: Use busca_lote (Analista)
+    # estoque_preco_alias, -> Removido: Use busca_lote (Analista)
     busca_lote_tool,
-    estoque_tool,
+    # estoque_tool, -> (Já estava encapsulado na busca_lote, confirmando remoção completa do acesso direto)
     add_item_tool,
     view_cart_tool,
     remove_item_tool,
@@ -610,6 +609,17 @@ def route_by_intent(state: AgentState) -> Literal["vendedor", "caixa"]:
         return "caixa"
     return "vendedor"
 
+def route_from_caixa(state: AgentState) -> Literal["end", "orchestrator"]:
+    """
+    Decide se o caixa finaliza ou devolve para o orquestrador.
+    """
+    # Se o nó caixa definiu 'current_agent' como 'orchestrator', voltamos
+    current = state.get("current_agent", "caixa")
+    if current == "orchestrator":
+        return "orchestrator"
+    
+    return "end"
+
 # ============================================
 # Construção do Grafo
 # ============================================
@@ -637,9 +647,18 @@ def build_multi_agent_graph():
         }
     )
     
-    # Vendedor e Caixa terminam
+    # Vendedor termina (mas poderia loopar se quisesse, por enquanto mantemos simples)
     graph.add_edge("vendedor", END)
-    graph.add_edge("caixa", END)
+    
+    # Caixa pode terminar ou voltar
+    graph.add_conditional_edges(
+        "caixa",
+        route_from_caixa,
+        {
+            "end": END,
+            "orchestrator": "orchestrator"
+        }
+    )
     
     # Compilar
     memory = MemorySaver()

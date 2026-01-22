@@ -22,18 +22,22 @@ logger = setup_logger(__name__)
 # ============================================
 
 SEARCH_AGENT_PROMPT = """
-Você é um ESPECIALISTA em encontrar produtos de supermercado.
-Sua missão é receber uma busca do usuário, analisar os candidatos encontrados no banco de dados e retornar APENAS os produtos corretos que o cliente deseja.
+Você é o ANALISTA DE PRODUTOS do Mercadinho Queiroz.
+Sua missão é receber um pedido "cru" do Vendedor (ex: "quatro carioquinha e uma coca") e retornar os produtos EXATOS e CORRETOS do banco de dados.
+
+### SEU CLIENTE É O VENDEDOR
+- O Vendedor não sabe procurar no banco de dados. Ele depende 100% de você.
+- Se você errar, o Vendedor vende errado.
+- Se você não achar, o Vendedor perde a venda.
 
 ### INSTRUÇÕES:
-1. Analise o TERMO BUSCADO pelo usuário (ex: "leite", "pão", "coca").
-2. Analise a LISTA DE CANDIDATOS que o sistema encontrou para este termo.
-3. FILTRE os candidatos:
-    - Remova produtos sem estoque (se a informação estiver disponível).
-    - Remova produtos que não correspondem ao que o usuário quer (ex: se pediu "leite", remova "chocolate ao leite", "doce de leite").
-    - Se o usuário foi genérico (ex: "café"), priorize os tradicionais/mais comuns.
-    - Se o usuário foi específico (ex: "café solúvel"), traga apenas os que atendem.
-4. PADRONIZE a saída em JSON.
+1. Analise o TERMO BUSCADO (ex: "leite", "pão", "coca").
+2. Analise a LISTA DE CANDIDATOS que o sistema encontrou.
+3. FILTRE RIGOROSAMENTE:
+    - 🚨 **REGRA DE BEBIDAS:** Se pediu bebida (Coca, Cerveja) e NÃO falou "vasilhame/casco", **IGNORE** itens com nome "VASILHAME", "GARRAFAO", "RETORNAVEL". Priorize PET/Lata.
+    - **Semântica:** "Carioquinha" = "Pão Francês". "Coca" = "Coca-Cola".
+    - **Estoque:** Se souber que está sem estoque, avise.
+4. RETORNE JSON LIMPO.
 
 ### CONTEXTO DE CANDIDATOS:
 {candidates_context}
@@ -42,15 +46,13 @@ Sua missão é receber uma busca do usuário, analisar os candidatos encontrados
 "{user_query}"
 
 ### RETORNO ESPERADO (JSON):
-Retorne uma lista JSON pura com os produtos selecionados.
-Se nenhum produto servir, retorne lista vazia [].
-
-Formato do Item:
+Retorne uma lista JSON pura.
+Format:
 {{
     "ean": "123456",
-    "nome": "Nome do Produto",
-    "score": 0.95 (quão bom é esse match, de 0 a 1),
-    "razao": "Explicação breve de por que escolheu este item"
+    "nome": "Nome Exato do Produto",
+    "score": 0.95,
+    "razao": "Explicação breve (ex: 'Match exato com Coca PET')"
 }}
 """
 
@@ -95,13 +97,14 @@ def _get_fast_llm():
 # 3. Função Principal (Tool)
 # ============================================
 
-def search_specialist_tool(queries_str: str) -> str:
+def analista_produtos_tool(queries_str: str) -> str:
     """
-    Agente Especialista em Busca de Produtos.
-    Recebe uma string com termos (ex: "arroz, feijão, 2 coca cola") e retorna os melhores matches validados.
+    [ANALISTA DE PRODUTOS]
+    Agente Especialista que traduz pedidos do cliente em produtos reais do banco de dados.
+    Usa busca vetorial + inteligência semântica.
     
     Args:
-        queries_str: String com nomes de produtos, pode ser separada por vírgula ou quebra de linha.
+        queries_str: Termos de busca (ex: "arroz, feijão, pão").
     """
     results = []
     
@@ -142,24 +145,27 @@ def search_specialist_tool(queries_str: str) -> str:
                     # 4. Validar Estoque Real (Último Check)
                     stock_info = estoque_preco(ean)
                     
-                    # Adicionar à lista final
-                    # Precisamos parsear o retorno do estoque_preco para formatar bonito?
-                    # Ou podemos retornar uma estrutura que o agente principal entenda?
-                    # Vamos retornar um "Resumo" textual já pronto para o Agente Principal usar.
-                    
                     try:
-                         info_json = json.loads(stock_info)
+                         #info_json = json.loads(stock_info) # A função estoque_preco as vezes retorna string direta se der erro, mas geralmente é lista JSON
+                         # Melhor garantir parse seguro
+                         if isinstance(stock_info, str) and stock_info.startswith("["):
+                             info_json = json.loads(stock_info)
+                         else:
+                             info_json = []
+
                          if isinstance(info_json, list) and info_json:
                              item_data = info_json[0]
                              price = item_data.get("preco", 0)
                              name = item_data.get("produto", best_match.get("nome"))
                              
-                             results.append(f"✅ Encontrado: {name} (R$ {price:.2f})")
+                             # RETORNO TÉCNICO PARA O VENDEDOR
+                             # O Vendedor vai ler isso e decidir.
+                             results.append(f"🔍 [ANALISTA] ITEM VALIDADO:\n- Nome: {name}\n- EAN: {ean}\n- Preço Tabela: R$ {price:.2f}\n- Score Semântico: {best_match.get('score')}\n- Obs: {best_match.get('razao')}")
                          else:
-                             # Se estoque_preco retornou vazio (sem estoque)
-                             results.append(f"⚠️ {term}: Produto '{best_match.get('nome')}' encontrado, mas está SEM ESTOQUE no momento.")
-                    except:
-                        results.append(f"⚠️ {term}: Erro ao consultar preço.")
+                             results.append(f"⚠️ [ANALISTA] EAN {ean} ({best_match.get('nome')}) encontrado na base, mas SEM ESTOQUE/PREÇO no sistema de vendas.")
+                    except Exception as ex:
+                        logger.error(f"Erro parse estoque: {ex}")
+                        results.append(f"⚠️ [ANALISTA] Erro ao consultar preço do EAN {ean}.")
             else:
                 results.append(f"❌ {term}: Não encontrei um produto correspondente no mix.")
 
