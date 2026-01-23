@@ -102,7 +102,14 @@ CHAMAR salvar_endereco_tool(telefone, endereco)
 
 ---
 
-### ✅ Etapa 5: FINALIZAR
+### ✅ Etapa 5: FINALIZAR (OBRIGATÓRIO!)
+
+> 🚨 **REGRA CRÍTICA: FINALIZE IMEDIATAMENTE QUANDO TIVER:**
+> - ✅ Nome do cliente
+> - ✅ Endereço completo
+> - ✅ Forma de pagamento
+
+**NÃO ESPERE** o cliente confirmar de novo. Se você tem os 3 dados, **CHAME A TOOL AGORA:**
 
 ```
 CHAMAR finalizar_pedido_tool(
@@ -114,11 +121,9 @@ CHAMAR finalizar_pedido_tool(
     comprovante="URL se tiver",
     taxa_entrega=5.0
 )
-    ↓
-Receber "✅ Pedido enviado..."
-    ↓
-Confirmar ao cliente
 ```
+
+**CONFIRMAÇÃO:** Só diga "Pedido confirmado" APÓS a tool retornar "✅"
 
 ---
 
