@@ -773,7 +773,7 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
                         break
             
             if ultima_pergunta_ia:
-                mensagem_expandida = f"O cliente respondeu '{clean_message}' à sua pergunta anterior: \"{ultima_pergunta_ia}...\". Execute a ação apropriada."
+                mensagem_expandida = f"O cliente respondeu '{clean_message}' CONFIRMANDO. Sua mensagem anterior foi: \"{ultima_pergunta_ia}...\". Se você sugeriu produtos com preços, VOCÊ DEVE CHAMAR add_item_tool AGORA para cada produto sugerido usando os dados (EAN, nome, preço) que você já tem do contexto anterior."
                 logger.info(f"🔄 Mensagem curta expandida: '{clean_message}'")
         elif msg_lower in ["nao", "não", "n", "nope", "nao quero", "não quero"]:
             mensagem_expandida = f"O cliente respondeu '{clean_message}' (NEGATIVO). Pergunte se precisa de mais alguma coisa."
