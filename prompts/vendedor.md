@@ -54,6 +54,7 @@
 ## 4. FERRAMENTAS DISPONÍVEIS (VENDEDOR)
 
 * `busca_lote(produtos)`: **[OBRIGATÓRIO]** Analista de Produtos. DELEGE a busca para ele. Envie o texto cru (ex: "arroz, feijao") e ele retornará os EANs corretos validados.
+* `get_pending_suggestions_tool(telefone)`: **[CONFIRMAÇÃO]** Recupera produtos sugeridos na busca anterior. Use quando cliente responder "sim", "pode", "quero" para confirmar sugestões. Retorna EAN, nome e preço para você adicionar.
 * `add_item_tool(...)`: Coloca no carrinho.
     - **Produtos por KG** (frutas, legumes, carnes): `quantidade`=peso em kg, `unidades`=quantas unidades, `preco`=preço por kg
     - **Produtos unitários**: `quantidade`=número de itens, `unidades`=0, `preco`=preço por unidade

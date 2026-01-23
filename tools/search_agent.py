@@ -97,7 +97,7 @@ def _get_fast_llm():
 # 3. Função Principal (Tool)
 # ============================================
 
-def analista_produtos_tool(queries_str: str) -> str:
+def analista_produtos_tool(queries_str: str, telefone: str = None) -> str:
     """
     [ANALISTA DE PRODUTOS]
     Agente Especialista que traduz pedidos do cliente em produtos reais do banco de dados.
@@ -105,8 +105,10 @@ def analista_produtos_tool(queries_str: str) -> str:
     
     Args:
         queries_str: Termos de busca (ex: "arroz, feijão, pão").
+        telefone: Opcional - número do cliente para salvar sugestões no cache.
     """
     results = []
+    validated_products = []  # Para cache no Redis
     
     # 1. Separar múltiplos termos (ex: "arroz, feijao")
     terms = [t.strip() for t in queries_str.replace('\n', ',').split(',') if t.strip()]
@@ -158,6 +160,14 @@ def analista_produtos_tool(queries_str: str) -> str:
                              price = item_data.get("preco", 0)
                              name = item_data.get("produto", best_match.get("nome"))
                              
+                             # SALVAR NO CACHE PARA MEMÓRIA COMPARTILHADA
+                             validated_products.append({
+                                 "ean": str(ean),
+                                 "nome": name,
+                                 "preco": float(price),
+                                 "termo_busca": term
+                             })
+                             
                              # RETORNO TÉCNICO PARA O VENDEDOR
                              # O Vendedor vai ler isso e decidir.
                              results.append(f"🔍 [ANALISTA] ITEM VALIDADO:\n- Nome: {name}\n- EAN: {ean}\n- Preço Tabela: R$ {price:.2f}\n- Score Semântico: {best_match.get('score')}\n- Obs: {best_match.get('razao')}")
@@ -173,7 +183,17 @@ def analista_produtos_tool(queries_str: str) -> str:
             logger.error(f"❌ [SUB-AGENT] Erro no processamento LLM para '{term}': {e}")
             results.append(f"❌ {term}: Erro interno na busca.")
 
+    # SALVAR CACHE NO REDIS SE TIVER TELEFONE
+    if telefone and validated_products:
+        try:
+            from tools.redis_tools import save_suggestions
+            save_suggestions(telefone, validated_products)
+            logger.info(f"💾 [SUB-AGENT] Cache salvo: {len(validated_products)} produtos para {telefone}")
+        except Exception as e:
+            logger.error(f"Erro ao salvar cache de sugestões: {e}")
+
     if not results:
         return "Nenhum produto encontrado."
         
     return "\n".join(results)
+

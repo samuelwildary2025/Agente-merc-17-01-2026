@@ -366,3 +366,19 @@ Bairro Centro → **Frete: R$ 5,00**.
 Mas seu carrinho está vazio no momento. Para fechar o pedido, adicione itens primeiro comigo!
 
 O que quer...
+2026-01-22 13:14:46 - tools.search_agent - INFO - 🕵️ [SUB-AGENT] Iniciando busca especialista para: ['cocacola 2l']
+2026-01-22 13:14:46 - tools.db_vector_search - INFO - 🔍 [VECTOR SEARCH] Buscando: 'cocacola 2l'
+2026-01-22 13:14:47 - tools.db_vector_search - INFO - 🔀 [HYBRID SEARCH] Query: 'cocacola 2l' → 'cocacola 2l'
+2026-01-22 13:14:48 - tools.db_vector_search - INFO - 🔍 [VECTOR SEARCH] Encontrados 10 resultados
+2026-01-22 13:14:48 - tools.db_vector_search - INFO - ⚡ [RERANK] Reordenando 10 resultados com FlashRank...
+2026-01-22 13:14:48 - tools.db_vector_search - INFO - ✅ [RERANK] Reordenação concluída. Top 1 antigo score: 0.837 -> Novo: 0.837
+2026-01-22 13:14:51 - tools.http_tools - INFO - Consultando estoque_preco por EAN: http://45.178.95.233:5001/api/Produto/GetProdutosEAN/2008
+2026-01-22 13:14:51 - tools.http_tools - INFO - EAN 2008: 1 item(s) disponíveis após filtragem
+2026-01-22 13:16:07 - tools.search_agent - INFO - 🕵️ [SUB-AGENT] Iniciando busca especialista para: ['cocacola 2l']
+2026-01-22 13:16:07 - tools.db_vector_search - INFO - 🔍 [VECTOR SEARCH] Buscando: 'cocacola 2l'
+2026-01-22 13:16:08 - tools.db_vector_search - INFO - 🔀 [HYBRID SEARCH] Query: 'cocacola 2l' → 'cocacola 2l'
+2026-01-22 13:16:08 - tools.db_vector_search - INFO - 🔍 [VECTOR SEARCH] Encontrados 10 resultados
+2026-01-22 13:16:08 - tools.db_vector_search - INFO - ⚡ [RERANK] Reordenando 10 resultados com FlashRank...
+2026-01-22 13:16:09 - tools.db_vector_search - INFO - ✅ [RERANK] Reordenação concluída. Top 1 antigo score: 0.837 -> Novo: 0.837
+2026-01-22 13:16:11 - tools.http_tools - INFO - Consultando estoque_preco por EAN: http://45.178.95.233:5001/api/Produto/GetProdutosEAN/7894900701517
+2026-01-22 13:16:11 - tools.http_tools - INFO - EAN 7894900701517: 1 item(s) disponíveis após filtragem

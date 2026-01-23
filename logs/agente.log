@@ -338,3 +338,19 @@
 {"asctime": "2026-01-22 12:11:58", "name": "tools.redis_tools", "levelname": "ERROR", "message": "Erro ao conectar ao Redis: Error 8 connecting to projeto_queiroz_redis_agente:6379. nodename nor servname provided, or not known."}
 {"asctime": "2026-01-22 12:11:59", "name": "agent_multiagent", "levelname": "INFO", "message": "\ud83d\udcb0 [CAIXA] Resposta: Perfeito! Endere\u00e7o salvo: **Rua S\u00e3o Jo\u00e3o, 112, Centro**.\n\nBairro Centro \u2192 **Frete: R$ 5,00**.\n\nMas s..."}
 {"asctime": "2026-01-22 12:11:59", "name": "agent_multiagent", "levelname": "INFO", "message": "\u2705 [MULTI-AGENT] Resposta: Perfeito! Endere\u00e7o salvo: **Rua S\u00e3o Jo\u00e3o, 112, Centro**.\n\nBairro Centro \u2192 **Frete: R$ 5,00**.\n\nMas seu carrinho est\u00e1 vazio no momento. Para fechar o pedido, adicione itens primeiro comigo!\n\nO que quer..."}
+{"asctime": "2026-01-22 13:14:46", "name": "tools.search_agent", "levelname": "INFO", "message": "\ud83d\udd75\ufe0f [SUB-AGENT] Iniciando busca especialista para: ['cocacola 2l']"}
+{"asctime": "2026-01-22 13:14:46", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'cocacola 2l'"}
+{"asctime": "2026-01-22 13:14:47", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'cocacola 2l' \u2192 'cocacola 2l'"}
+{"asctime": "2026-01-22 13:14:48", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 13:14:48", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 10 resultados com FlashRank..."}
+{"asctime": "2026-01-22 13:14:48", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 0.837 -> Novo: 0.837"}
+{"asctime": "2026-01-22 13:14:51", "name": "tools.http_tools", "levelname": "INFO", "message": "Consultando estoque_preco por EAN: http://45.178.95.233:5001/api/Produto/GetProdutosEAN/2008"}
+{"asctime": "2026-01-22 13:14:51", "name": "tools.http_tools", "levelname": "INFO", "message": "EAN 2008: 1 item(s) dispon\u00edveis ap\u00f3s filtragem"}
+{"asctime": "2026-01-22 13:16:07", "name": "tools.search_agent", "levelname": "INFO", "message": "\ud83d\udd75\ufe0f [SUB-AGENT] Iniciando busca especialista para: ['cocacola 2l']"}
+{"asctime": "2026-01-22 13:16:07", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Buscando: 'cocacola 2l'"}
+{"asctime": "2026-01-22 13:16:08", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd00 [HYBRID SEARCH] Query: 'cocacola 2l' \u2192 'cocacola 2l'"}
+{"asctime": "2026-01-22 13:16:08", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\ud83d\udd0d [VECTOR SEARCH] Encontrados 10 resultados"}
+{"asctime": "2026-01-22 13:16:08", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u26a1 [RERANK] Reordenando 10 resultados com FlashRank..."}
+{"asctime": "2026-01-22 13:16:09", "name": "tools.db_vector_search", "levelname": "INFO", "message": "\u2705 [RERANK] Reordena\u00e7\u00e3o conclu\u00edda. Top 1 antigo score: 0.837 -> Novo: 0.837"}
+{"asctime": "2026-01-22 13:16:11", "name": "tools.http_tools", "levelname": "INFO", "message": "Consultando estoque_preco por EAN: http://45.178.95.233:5001/api/Produto/GetProdutosEAN/7894900701517"}
+{"asctime": "2026-01-22 13:16:11", "name": "tools.http_tools", "levelname": "INFO", "message": "EAN 7894900701517: 1 item(s) dispon\u00edveis ap\u00f3s filtragem"}

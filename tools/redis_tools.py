@@ -780,3 +780,82 @@ def save_address(telefone: str, endereco: str) -> bool:
 def get_saved_address(telefone: str) -> Optional[str]:
     """Alias para get_address"""
     return get_address(telefone)
+
+
+# ============================================
+# Cache de Produtos Sugeridos (Memória Compartilhada Vendedor ↔ Analista)
+# ============================================
+
+SUGGESTIONS_TTL = 600  # 10 minutos
+
+def suggestions_key(telefone: str) -> str:
+    """Chave para armazenar produtos sugeridos."""
+    return f"suggestions:{telefone}"
+
+
+def save_suggestions(telefone: str, products: List[Dict]) -> bool:
+    """
+    Salva os produtos sugeridos pelo Analista para o cliente.
+    O Vendedor pode recuperar esses dados quando o cliente confirmar.
+    
+    Args:
+        telefone: Número do cliente
+        products: Lista de produtos [{ean, nome, preco}, ...]
+    
+    Returns:
+        True se salvo com sucesso
+    """
+    client = get_redis_client()
+    if client is None:
+        logger.warning(f"[fallback] Sugestões não persistidas (Redis indisponível) para {telefone}")
+        return False
+    
+    try:
+        key = suggestions_key(telefone)
+        # Salvar como JSON
+        client.set(key, json.dumps(products, ensure_ascii=False), ex=SUGGESTIONS_TTL)
+        logger.info(f"💡 {len(products)} sugestões salvas para {telefone} (TTL: {SUGGESTIONS_TTL//60}min)")
+        return True
+    except Exception as e:
+        logger.error(f"Erro ao salvar sugestões: {e}")
+        return False
+
+
+def get_suggestions(telefone: str) -> List[Dict]:
+    """
+    Recupera os produtos sugeridos anteriormente para o cliente.
+    
+    Returns:
+        Lista de produtos [{ean, nome, preco}, ...] ou lista vazia
+    """
+    client = get_redis_client()
+    if client is None:
+        return []
+    
+    try:
+        key = suggestions_key(telefone)
+        data = client.get(key)
+        if data:
+            products = json.loads(data)
+            logger.info(f"💡 Sugestões recuperadas para {telefone}: {len(products)} produtos")
+            return products if isinstance(products, list) else []
+        return []
+    except Exception as e:
+        logger.error(f"Erro ao recuperar sugestões: {e}")
+        return []
+
+
+def clear_suggestions(telefone: str) -> bool:
+    """Remove as sugestões após serem usadas."""
+    client = get_redis_client()
+    if client is None:
+        return False
+    
+    try:
+        client.delete(suggestions_key(telefone))
+        logger.info(f"💡 Sugestões limpas para {telefone}")
+        return True
+    except Exception as e:
+        logger.error(f"Erro ao limpar sugestões: {e}")
+        return False
+

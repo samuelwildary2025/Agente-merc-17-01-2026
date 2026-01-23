@@ -189,6 +189,18 @@ def estoque_preco_alias(ean: str) -> str:
     """Consulta preço e disponibilidade pelo EAN (apenas dígitos)."""
     return estoque_preco(ean)
 
+# Variável de contexto para compartilhar telefone entre Vendedor e Analista
+from contextvars import ContextVar
+_current_phone: ContextVar[str] = ContextVar('current_phone', default='')
+
+def set_current_phone(phone: str):
+    """Define o telefone atual para o contexto de execução."""
+    _current_phone.set(phone)
+
+def get_current_phone() -> str:
+    """Obtém o telefone atual do contexto de execução."""
+    return _current_phone.get()
+
 @tool("busca_lote")
 def busca_lote_tool(produtos: str) -> str:
     """
@@ -201,8 +213,10 @@ def busca_lote_tool(produtos: str) -> str:
     """
     if not produtos or not produtos.strip():
         return "❌ Informe os produtos para o analista."
-        
-    return analista_produtos_tool(produtos)
+    
+    # Obter telefone do contexto para memória compartilhada
+    telefone = get_current_phone()
+    return analista_produtos_tool(produtos, telefone=telefone)
 
 @tool
 def consultar_encarte_tool() -> str:
@@ -214,6 +228,39 @@ def consultar_encarte_tool() -> str:
         JSON com a URL (campo encarte_url) ou lista de URLs (campo active_encartes_urls) das imagens.
     """
     return consultar_encarte()
+
+@tool
+def get_pending_suggestions_tool(telefone: str) -> str:
+    """
+    [RECUPERAR SUGESTÕES PENDENTES]
+    Use quando o cliente responder 'sim', 'pode', 'quero' para confirmar produtos sugeridos anteriormente.
+    
+    Retorna os produtos que foram sugeridos na última busca, com EAN, nome e preço.
+    Após recuperar, você DEVE chamar add_item_tool para cada produto.
+    
+    Args:
+        telefone: Número do cliente
+    
+    Returns:
+        Lista de produtos pendentes no formato JSON, ou mensagem de erro.
+    """
+    from tools.redis_tools import get_suggestions, clear_suggestions
+    import json
+    
+    suggestions = get_suggestions(telefone)
+    
+    if not suggestions:
+        return "❌ Nenhuma sugestão pendente encontrada. Peça ao cliente para especificar o que deseja."
+    
+    # Limpar cache após recuperar (para não repetir)
+    clear_suggestions(telefone)
+    
+    # Formatar para o agente
+    output = "✅ PRODUTOS PENDENTES RECUPERADOS (ADICIONE COM add_item_tool):\n"
+    for prod in suggestions:
+        output += f"- Nome: {prod.get('nome')}\n  EAN: {prod.get('ean')}\n  Preço: R$ {prod.get('preco', 0):.2f}\n\n"
+    
+    return output
 
 # --- FERRAMENTAS DO CAIXA ---
 
@@ -387,6 +434,7 @@ VENDEDOR_TOOLS = [
     view_cart_tool,
     remove_item_tool,
     consultar_encarte_tool,
+    get_pending_suggestions_tool,  # Memória compartilhada com Analista
     time_tool,
     search_history_tool,
 ]
@@ -519,6 +567,9 @@ def vendedor_node(state: AgentState) -> dict:
     Nó Vendedor: Agente especializado em vendas com prompt completo.
     """
     logger.info("👩‍💼 [VENDEDOR] Processando...")
+    
+    # Definir telefone no contexto para memória compartilhada com Analista
+    set_current_phone(state["phone"])
     
     prompt = load_prompt("vendedor.md")
     llm = _build_llm()
