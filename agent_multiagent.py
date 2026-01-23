@@ -589,27 +589,36 @@ def vendedor_node(state: AgentState) -> dict:
     # Extrair resposta
     response = _extract_response(result)
 
-    # --- TRAVA DE ALUCINAÇÃO (SAFETY CHECK) ---
-    # Verifica se o agente disse que adicionou, mas NÃO chamou a tool
-    if "adicionei" in response.lower() or "adicionado" in response.lower():
-        tool_called = False
-        messages = result.get("messages", [])
-        for msg in reversed(messages):
-            if isinstance(msg, AIMessage) and hasattr(msg, 'tool_calls') and msg.tool_calls:
-                for call in msg.tool_calls:
-                    if call['name'] == 'add_item_tool':
-                        tool_called = True
-                        break
-            if tool_called: break
-        
-        if not tool_called:
-            logger.warning("⚠️ ALUCINAÇÃO DETECTADA: Agente disse que adicionou mas não chamou a tool.")
-            # Forçar uma resposta de erro para o próprio agente corrigir
-            response = "❌ ERRO DE SISTEMA: Você disse que adicionou, mas NENHUM item foi registrado no carrinho. Você DEVE chamar `add_item_tool` com os argumentos corretos agora. Tente novamente."
-            # Opcional: Poderíamos retentar automaticamente, mas por enquanto vamos alterar a resposta final para o usuário não ser enganado
-            # Ou melhor: vamos injetar essa mensagem como se fosse o sistema e rodar de novo (loop).
-            # Para simplificar na V5, vamos apenas alterar a resposta final alertando o erro.
-            response = "Desculpe, tive um erro técnico ao salvar no carrinho. Vou tentar novamente. O que você pediu mesmo?"
+    # --- TRAVA DE ALUCINAÇÃO ROBUSTA (V5) ---
+    messages = result.get("messages", [])
+    
+    # Coletar todas as tools chamadas
+    tools_called = set()
+    for msg in messages:
+        if isinstance(msg, AIMessage) and hasattr(msg, 'tool_calls') and msg.tool_calls:
+            for call in msg.tool_calls:
+                tools_called.add(call['name'])
+    
+    response_lower = response.lower()
+    hallucination_detected = False
+    hallucination_reason = ""
+    
+    # Verificar: disse "adicionei" sem chamar add_item_tool
+    if "adicionei" in response_lower or "adicionado" in response_lower:
+        if "add_item_tool" not in tools_called:
+            hallucination_detected = True
+            hallucination_reason = "disse 'adicionei' sem chamar add_item_tool"
+    
+    # Verificar: disse "encontrei" sem chamar busca_lote
+    if "encontrei" in response_lower and "busca_lote" not in tools_called:
+        # Só é problema se não veio de get_pending_suggestions
+        if "get_pending_suggestions_tool" not in tools_called:
+            hallucination_detected = True
+            hallucination_reason = "disse 'encontrei' sem buscar"
+    
+    if hallucination_detected:
+        logger.warning(f"⚠️ ALUCINAÇÃO DETECTADA: {hallucination_reason}. Tools usadas: {tools_called}")
+        response = "Desculpe, tive um problema técnico. Pode me dizer novamente o que você gostaria?"
 
     logger.info(f"👩‍💼 [VENDEDOR] Resposta: {response[:100]}...")
     
@@ -643,8 +652,38 @@ def caixa_node(state: AgentState) -> dict:
     # Extrair resposta
     response = _extract_response(result)
     
+    # --- TRAVA DE ALUCINAÇÃO CAIXA (V5) ---
+    messages = result.get("messages", [])
+    tools_called = set()
+    for msg in messages:
+        if isinstance(msg, AIMessage) and hasattr(msg, 'tool_calls') and msg.tool_calls:
+            for call in msg.tool_calls:
+                tools_called.add(call['name'])
+    
+    response_lower = response.lower()
+    hallucination_detected = False
+    hallucination_reason = ""
+    
+    # Verificar: disse "pedido confirmado/finalizado" sem chamar finalizar_pedido_tool
+    confirmacao_words = ["pedido confirmado", "pedido enviado", "pedido finalizado", "✅ pedido"]
+    if any(w in response_lower for w in confirmacao_words):
+        if "finalizar_pedido_tool" not in tools_called:
+            hallucination_detected = True
+            hallucination_reason = "disse 'pedido confirmado' sem chamar finalizar_pedido_tool"
+    
+    # Verificar: mencionou total específico sem calcular
+    import re
+    total_match = re.search(r'total[:\s]*r\$\s*\d+', response_lower)
+    if total_match and "calcular_total_tool" not in tools_called:
+        hallucination_detected = True
+        hallucination_reason = "mencionou total sem calcular"
+    
+    if hallucination_detected:
+        logger.warning(f"⚠️ ALUCINAÇÃO CAIXA: {hallucination_reason}. Tools: {tools_called}")
+        response = "Desculpe, tive um problema ao processar. Vou verificar seu pedido novamente..."
+    
     # Verificar se o cliente quer voltar ao vendedor
-    if "para alterar itens" in response.lower() or "mudar o pedido" in response.lower():
+    if "para alterar itens" in response_lower or "mudar o pedido" in response_lower:
         logger.info("💰 [CAIXA] Cliente quer alterar → Devolvendo para Orquestrador")
         return {
             "final_response": response,
