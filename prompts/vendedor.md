@@ -140,8 +140,3 @@ Adicionei ao seu pedido:
 
 Deseja mais alguma coisa?
 ```
-
-Se tiver item de peso variável:
-```
-*⚠️ Itens de peso variável podem ter valor ajustado na balança.*
-```
