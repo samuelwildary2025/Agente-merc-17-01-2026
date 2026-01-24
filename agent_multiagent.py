@@ -201,12 +201,12 @@ def get_current_phone() -> str:
     """Obtém o telefone atual do contexto de execução."""
     return _current_phone.get()
 
-@tool("busca_lote")
-def busca_lote_tool(produtos: str) -> str:
+def _call_analista(produtos: str) -> str:
     """
     [VENDEDOR -> ANALISTA]
     Ponte para o Analista de Produtos.
-    O Vendedor envia o texto cru do cliente (ex: "arroz, leite"), e o Analista retorna os produtos validados com EAN.
+    O Vendedor envia o texto cru do cliente (ex: "quatro carioquinha e uma coca"), e o Analista decide se faz busca em lote ou individual.
+    O Analista retorna os produtos validados com EAN.
     
     Args:
         produtos: Termos de busca.
@@ -217,6 +217,11 @@ def busca_lote_tool(produtos: str) -> str:
     # Obter telefone do contexto para memória compartilhada
     telefone = get_current_phone()
     return analista_produtos_tool(produtos, telefone=telefone)
+
+
+@tool("busca_analista")
+def busca_analista_tool(produtos: str) -> str:
+    return _call_analista(produtos)
 
 @tool
 def consultar_encarte_tool() -> str:
@@ -258,7 +263,7 @@ def get_pending_suggestions_tool(telefone: str) -> str:
     # Formatar para o agente
     output = "✅ PRODUTOS PENDENTES RECUPERADOS (ADICIONE COM add_item_tool):\n"
     for prod in suggestions:
-        output += f"- Nome: {prod.get('nome')}\n  EAN: {prod.get('ean')}\n  Preço: R$ {prod.get('preco', 0):.2f}\n\n"
+        output += f"- Nome: {prod.get('nome')}\n  Preço: R$ {prod.get('preco', 0):.2f}\n\n"
     
     return output
 
@@ -426,10 +431,10 @@ def search_history_tool(telefone: str, keyword: str = None) -> str:
 # ============================================
 
 VENDEDOR_TOOLS = [
-    # ean_tool_alias, -> Removido: Use busca_lote (Analista)
-    # estoque_preco_alias, -> Removido: Use busca_lote (Analista)
-    busca_lote_tool,
-    # estoque_tool, -> (Já estava encapsulado na busca_lote, confirmando remoção completa do acesso direto)
+    # ean_tool_alias, -> Removido: Use busca_analista (Analista)
+    # estoque_preco_alias, -> Removido: Use busca_analista (Analista)
+    busca_analista_tool,
+    # estoque_tool, -> (Já estava encapsulado na busca_analista, confirmando remoção completa do acesso direto)
     add_item_tool,
     view_cart_tool,
     remove_item_tool,
@@ -516,26 +521,44 @@ def orchestrator_node(state: AgentState) -> dict:
     llm = _build_fast_llm()
     prompt = load_prompt("orchestrator.md")
     
-    # Pegar apenas a última mensagem do cliente para classificação
     last_user_message = ""
+    recent_lines = []
     for msg in reversed(state["messages"]):
         if isinstance(msg, HumanMessage):
             content = msg.content if isinstance(msg.content, str) else str(msg.content)
-            # Limpar tags de contexto
             content = re.sub(r'\[TELEFONE_CLIENTE:.*?\]', '', content)
             content = re.sub(r'\[HORÁRIO_ATUAL:.*?\]', '', content)
             content = re.sub(r'\[URL_IMAGEM:.*?\]', '', content)
-            last_user_message = content.strip()
+            content = content.strip()
+            if content:
+                if not last_user_message:
+                    last_user_message = content
+                recent_lines.append(f"Cliente: {content}")
+        elif isinstance(msg, AIMessage):
+            if hasattr(msg, 'tool_calls') and msg.tool_calls:
+                continue
+            content = msg.content if isinstance(msg.content, str) else str(msg.content)
+            content = re.sub(r'\[TELEFONE_CLIENTE:.*?\]', '', content)
+            content = re.sub(r'\[HORÁRIO_ATUAL:.*?\]', '', content)
+            content = re.sub(r'\[URL_IMAGEM:.*?\]', '', content)
+            content = content.strip()
+            if content:
+                recent_lines.append(f"Agente: {content}")
+        if len(recent_lines) >= 8:
             break
     
-    if not last_user_message:
+    recent_lines = list(reversed(recent_lines))
+    conversation = "\n".join(recent_lines).strip()
+    
+    if not conversation and not last_user_message:
         logger.warning("⚠️ [ORCHESTRATOR] Nenhuma mensagem do usuário encontrada")
         return {"intent": "vendas", "current_agent": "vendedor"}
     
-    # Invocar o LLM para classificar
+    user_payload = conversation if conversation else last_user_message
+    
     messages = [
         SystemMessage(content=prompt),
-        HumanMessage(content=last_user_message)
+        HumanMessage(content=user_payload)
     ]
     
     try:
@@ -609,8 +632,8 @@ def vendedor_node(state: AgentState) -> dict:
             hallucination_detected = True
             hallucination_reason = "disse 'adicionei' sem chamar add_item_tool"
     
-    # Verificar: disse "encontrei" sem chamar busca_lote
-    if "encontrei" in response_lower and "busca_lote" not in tools_called:
+    # Verificar: disse "encontrei" sem buscar
+    if "encontrei" in response_lower and "busca_analista" not in tools_called:
         # Só é problema se não veio de get_pending_suggestions
         if "get_pending_suggestions_tool" not in tools_called:
             hallucination_detected = True
