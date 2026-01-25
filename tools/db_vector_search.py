@@ -239,7 +239,9 @@ def search_products_vector(query: str, limit: int = 20) -> str:
             # Usar regex para buscar palavra exata (evita "maca" em "macarrao")
             if re.search(r'\b' + re.escape(keyword) + r'\b', query_to_check):
                 # Adiciona contexto de categoria para melhorar a similaridade
-                if keyword in ["frango", "carne", "peixe"]:
+                if keyword in ["frango"]:
+                    enhanced_query = f"{query} açougue carnes abatido resfriado"
+                elif keyword in ["carne", "peixe"]:
                     enhanced_query = f"{query} açougue carnes"
                 elif keyword in ["ovo", "leite", "queijo", "manteiga", "iogurte"]:
                     enhanced_query = f"{query} laticínios"
