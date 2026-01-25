@@ -57,11 +57,19 @@ def _load_product_context_text() -> str:
 
 @tool("banco_vetorial")
 def banco_vetorial_tool(query: str, limit: int = 10) -> str:
+    """
+    Realiza uma busca vetorial no banco de dados de produtos.
+    Retorna uma lista de produtos mais similares semanticamente à query.
+    """
     return run_vector_search_subagent(query, limit=limit)
 
 
 @tool("estoque_preco")
 def estoque_preco_tool(ean: str) -> str:
+    """
+    Consulta o estoque e preço atual de um produto pelo seu código EAN.
+    Retorna JSON com dados atualizados.
+    """
     return estoque_preco(ean)
 
 
