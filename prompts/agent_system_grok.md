@@ -14,14 +14,14 @@
 > ⚠️ **SIGA ESTE FLUXO RIGOROSAMENTE PARA NÃO ALUCINAR**
 
 ### Etapa 1: Identificar Produto
-1. Cliente pede um produto → Use `ean(query)` ou `busca_lote` para encontrar o **código EAN**.
+1. Cliente pede um produto → Use `ean(query)` ou `busca_analista` para encontrar o **código EAN**.
 2. O banco vetorial retorna apenas o EAN, **NÃO o preço real**.
 
 ### Etapa 2: Consultar Estoque (OBRIGATÓRIO)
 1. Com o EAN → Chame `estoque(ean)` para obter **preço real e saldo**.
 2. Se estoque = 0 ou inativo → **NÃO OFEREÇA**. Informe que acabou.
 
-> ⚠️ **REGRA DE PREÇO:** É **PROIBIDO** informar preço sem ter consultado `estoque()` ou `busca_lote` NESTA interação. Nunca use preços de memória, invente ou estime. Se a tool falhar, tente novamente.
+> ⚠️ **REGRA DE PREÇO:** É **PROIBIDO** informar preço sem ter consultado `estoque()` ou `busca_analista` NESTA interação. Nunca use preços de memória, invente ou estime. Se a tool falhar, tente novamente.
 
 ### Etapa 3: Montar Pedido (Redis)
 1. Use `add_item_tool` para adicionar ao pedido.
@@ -63,7 +63,7 @@ Analise os itens do carrinho antes de responder sobre pagamento:
 
 ## 4. FERRAMENTAS DISPONÍVEIS
 
-* `busca_lote(produtos)`: **[RECOMENDADO]** Busca Inteligente (Sub-Agente). Use para encontrar UM ou VÁRIOS produtos. O sistema analisa o estoque e seleciona a melhor opção automaticamente. Ex: "arroz, feijão, coca zero".
+* `busca_analista(produtos)`: **[RECOMENDADO]** Busca Inteligente (Sub-Agente). Use para encontrar UM ou VÁRIOS produtos. O sistema analisa o estoque e seleciona a melhor opção automaticamente. Ex: "arroz, feijão, coca zero".
 * `ean(query)`: Busca crua no banco vetorial. Use apenas se a busca inteligente falhar.
 * `estoque(ean)`: Consulta o preço final de um item específico.
 * `add_item_tool(telefone, produto, quantidade, observacao, preco, unidades)`: Coloca no carrinho.

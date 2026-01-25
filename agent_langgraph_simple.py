@@ -415,8 +415,7 @@ def estoque_preco_alias(ean: str) -> str:
     """Consulta preço e disponibilidade pelo EAN (apenas dígitos)."""
     return estoque_preco(ean)
 
-@tool("busca_lote")
-def busca_lote_tool(produtos: str) -> str:
+def _call_search_specialist(produtos: str) -> str:
     """
     Ferramenta de BUSCA INTELLIGENTE de produtos (Sub-Agente).
     Use para encontrar produtos no estoque.
@@ -434,6 +433,11 @@ def busca_lote_tool(produtos: str) -> str:
         return "❌ Informe os produtos para busca."
         
     return search_specialist_tool(produtos)
+
+
+@tool("busca_analista")
+def busca_analista_tool(produtos: str) -> str:
+    return _call_search_specialist(produtos)
 
 @tool
 def salvar_comprovante_tool(telefone: str, url: str) -> str:

@@ -83,6 +83,8 @@ class Settings(BaseSettings):
     
     agent_prompt_path: Optional[str] = "prompts/vendedor.md"
 
+    product_context_path: Optional[str] = "prompts/product_context.json"
+
 
 # Instância global de configurações
 settings = Settings()

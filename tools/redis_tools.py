@@ -800,7 +800,7 @@ def save_suggestions(telefone: str, products: List[Dict]) -> bool:
     
     Args:
         telefone: Número do cliente
-        products: Lista de produtos [{ean, nome, preco}, ...]
+        products: Lista de produtos [{nome, preco, termo_busca}, ...]
     
     Returns:
         True se salvo com sucesso
@@ -826,7 +826,7 @@ def get_suggestions(telefone: str) -> List[Dict]:
     Recupera os produtos sugeridos anteriormente para o cliente.
     
     Returns:
-        Lista de produtos [{ean, nome, preco}, ...] ou lista vazia
+        Lista de produtos [{nome, preco, termo_busca}, ...] ou lista vazia
     """
     client = get_redis_client()
     if client is None:
@@ -858,4 +858,3 @@ def clear_suggestions(telefone: str) -> bool:
     except Exception as e:
         logger.error(f"Erro ao limpar sugestões: {e}")
         return False
-

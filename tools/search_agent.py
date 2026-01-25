@@ -1,9 +1,11 @@
-"""
-Ferramenta de Sub-Agente para Busca Especializada de Produtos
-"""
+"""Ferramenta de Sub-Agente para Busca Especializada de Produtos"""
 import json
 import logging
 from typing import List, Dict, Any, Optional
+from pathlib import Path
+from langchain_core.messages import HumanMessage
+from langchain_core.tools import tool
+from langgraph.prebuilt import create_react_agent
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
@@ -12,49 +14,105 @@ from langchain_core.output_parsers import JsonOutputParser
 
 from config.settings import settings
 from config.logger import setup_logger
-from tools.db_vector_search import search_products_vector, _extract_ean_and_name
+from tools.vector_search_subagent import run_vector_search_subagent
 from tools.http_tools import estoque_preco
 
 logger = setup_logger(__name__)
 
-# ============================================
-# 1. Definição do Prompt (O "Cérebro" do Sub-Agente)
-# ============================================
+_ANALISTA_PROMPT_CACHE: Optional[str] = None
+_PRODUCT_CONTEXT_CACHE: Optional[str] = None
 
-SEARCH_AGENT_PROMPT = """
-Você é o ANALISTA DE PRODUTOS do Mercadinho Queiroz.
-Sua missão é receber um pedido "cru" do Vendedor (ex: "quatro carioquinha e uma coca") e retornar os produtos EXATOS e CORRETOS do banco de dados.
 
-### SEU CLIENTE É O VENDEDOR
-- O Vendedor não sabe procurar no banco de dados. Ele depende 100% de você.
-- Se você errar, o Vendedor vende errado.
-- Se você não achar, o Vendedor perde a venda.
+def _load_analista_prompt() -> str:
+    global _ANALISTA_PROMPT_CACHE
+    if _ANALISTA_PROMPT_CACHE is not None:
+        return _ANALISTA_PROMPT_CACHE
 
-### INSTRUÇÕES:
-1. Analise o TERMO BUSCADO (ex: "leite", "pão", "coca").
-2. Analise a LISTA DE CANDIDATOS que o sistema encontrou.
-3. FILTRE RIGOROSAMENTE:
-    - 🚨 **REGRA DE BEBIDAS:** Se pediu bebida (Coca, Cerveja) e NÃO falou "vasilhame/casco", **IGNORE** itens com nome "VASILHAME", "GARRAFAO", "RETORNAVEL". Priorize PET/Lata.
-    - **Semântica:** "Carioquinha" = "Pão Francês". "Coca" = "Coca-Cola".
-    - **Estoque:** Se souber que está sem estoque, avise.
-4. RETORNE JSON LIMPO.
+    base_dir = Path(__file__).resolve().parent.parent
+    prompt_path = base_dir / "prompts" / "analista.md"
+    _ANALISTA_PROMPT_CACHE = prompt_path.read_text(encoding="utf-8")
+    return _ANALISTA_PROMPT_CACHE
 
-### CONTEXTO DE CANDIDATOS:
-{candidates_context}
 
-### TERMO BUSCADO:
-"{user_query}"
+def _load_product_context_text() -> str:
+    global _PRODUCT_CONTEXT_CACHE
+    if _PRODUCT_CONTEXT_CACHE is not None:
+        return _PRODUCT_CONTEXT_CACHE
 
-### RETORNO ESPERADO (JSON):
-Retorne uma lista JSON pura.
-Format:
-{{
-    "ean": "123456",
-    "nome": "Nome Exato do Produto",
-    "score": 0.95,
-    "razao": "Explicação breve (ex: 'Match exato com Coca PET')"
-}}
-"""
+    try:
+        base_dir = Path(__file__).resolve().parent.parent
+        rel_path = getattr(settings, "product_context_path", None) or ""
+        path = (base_dir / rel_path).resolve() if rel_path else None
+
+        if path and path.exists() and path.is_file():
+            _PRODUCT_CONTEXT_CACHE = path.read_text(encoding="utf-8")
+        else:
+            _PRODUCT_CONTEXT_CACHE = "{}"
+    except Exception as e:
+        logger.warning(f"⚠️ [SUB-AGENT] Falha ao carregar product_context: {e}")
+        _PRODUCT_CONTEXT_CACHE = "{}"
+
+    return _PRODUCT_CONTEXT_CACHE
+
+
+@tool("banco_vetorial")
+def banco_vetorial_tool(query: str, limit: int = 10) -> str:
+    return run_vector_search_subagent(query, limit=limit)
+
+
+@tool("estoque_preco")
+def estoque_preco_tool(ean: str) -> str:
+    return estoque_preco(ean)
+
+
+def _run_analista_agent_for_term(term: str, telefone: Optional[str] = None) -> dict:
+    prompt = _load_analista_prompt()
+    product_context = _load_product_context_text()
+
+    llm = _get_fast_llm()
+    agent = create_react_agent(llm, [banco_vetorial_tool, estoque_preco_tool], prompt=prompt)
+
+    user_payload = json.dumps(
+        {"termo": term, "product_context": json.loads(product_context)},
+        ensure_ascii=False,
+    )
+
+    config = {"recursion_limit": 12}
+    if telefone:
+        config["configurable"] = {"thread_id": telefone}
+
+    result = agent.invoke({"messages": [HumanMessage(content=user_payload)]}, config)
+    messages = result.get("messages", []) if isinstance(result, dict) else []
+
+    for m in reversed(messages):
+        if getattr(m, "type", None) != "ai":
+            continue
+        content = m.content if isinstance(m.content, str) else str(m.content)
+        content = (content or "").strip()
+        if not content:
+            continue
+        try:
+            return json.loads(content)
+        except Exception:
+            return {"ok": False, "termo": term, "motivo": "Resposta nao-JSON do analista"}
+
+    return {"ok": False, "termo": term, "motivo": "Sem resposta"}
+
+
+TERM_EXTRACTOR_PROMPT = """
+Você é um extrator de termos de produtos.
+
+Tarefa: Dado o texto do cliente, retorne uma lista JSON pura de termos curtos para busca no catálogo.
+
+Regras:
+- Retorne apenas JSON (uma lista de strings).
+- Remova quantidades, unidades, preços e palavras de intenção (ex: 'quero', 'tem', 'por favor').
+- Se houver mais de um produto, retorne vários termos.
+- Se for apenas um produto, retorne lista com 1 termo.
+- Se não der para identificar, retorne lista vazia.
+
+Texto do cliente: {text}
+""".strip()
 
 # ============================================
 # 2. Configurações do Modelo
@@ -110,77 +168,54 @@ def analista_produtos_tool(queries_str: str, telefone: str = None) -> str:
     results = []
     validated_products = []  # Para cache no Redis
     
-    # 1. Separar múltiplos termos (ex: "arroz, feijao")
-    terms = [t.strip() for t in queries_str.replace('\n', ',').split(',') if t.strip()]
+    extracted_terms: List[str] = []
+    try:
+        llm_terms = _get_fast_llm()
+        prompt_terms = ChatPromptTemplate.from_template(TERM_EXTRACTOR_PROMPT)
+        chain_terms = prompt_terms | llm_terms | JsonOutputParser()
+        extracted = chain_terms.invoke({"text": queries_str})
+
+        if isinstance(extracted, list):
+            extracted_terms = [str(t).strip() for t in extracted if str(t).strip()]
+        elif isinstance(extracted, dict):
+            raw_list = extracted.get("terms") or extracted.get("itens") or extracted.get("produtos") or []
+            if isinstance(raw_list, list):
+                extracted_terms = [str(t).strip() for t in raw_list if str(t).strip()]
+    except Exception as e:
+        logger.warning(f"⚠️ [SUB-AGENT] Falha ao extrair termos via LLM: {e}")
+
+    if not extracted_terms:
+        extracted_terms = [t.strip() for t in queries_str.replace("\n", ",").split(",") if t.strip()]
+
+    mode = "lote" if len(extracted_terms) > 1 else "individual"
+    logger.info(f"🕵️ [SUB-AGENT] Modo de busca: {mode} | termos: {extracted_terms}")
     
-    logger.info(f"🕵️ [SUB-AGENT] Iniciando busca especialista para: {terms}")
-    
-    for term in terms:
-        # 2. Busca Vetorial (Recuperação Bruta)
-        # Usamos limit=10 para dar opções para o LLM escolher
-        raw_result_str = search_products_vector(term, limit=10)
-        
-        # Se não achou nada na busca vetorial, pula
-        if "Nenhum produto" in raw_result_str or "Erro" in raw_result_str:
-            logger.warning(f"⚠️ [SUB-AGENT] Vetorial não achou nada para '{term}'")
-            continue
-            
-        # 3. Invocar o LLM para Curadoria (O "Cérebro")
+    for term in extracted_terms:
         try:
-            llm = _get_fast_llm()
-            prompt = ChatPromptTemplate.from_template(SEARCH_AGENT_PROMPT)
-            chain = prompt | llm | JsonOutputParser()
-            
-            # Executar
-            structured_matches = chain.invoke({
-                "user_query": term,
-                "candidates_context": raw_result_str
-            })
-            
-            if structured_matches and isinstance(structured_matches, list):
-                # Pegar o Top 1 (ou Top 2 se scores muito próximos, mas vamos simplificar para Top 1 por termo)
-                # O LLM já deve ter ordenado por "score" ou relevância
-                best_match = structured_matches[0]
-                
-                ean = best_match.get("ean")
-                if ean:
-                    # 4. Validar Estoque Real (Último Check)
-                    stock_info = estoque_preco(ean)
-                    
-                    try:
-                         #info_json = json.loads(stock_info) # A função estoque_preco as vezes retorna string direta se der erro, mas geralmente é lista JSON
-                         # Melhor garantir parse seguro
-                         if isinstance(stock_info, str) and stock_info.startswith("["):
-                             info_json = json.loads(stock_info)
-                         else:
-                             info_json = []
+            decision = _run_analista_agent_for_term(term, telefone=telefone)
+            if not isinstance(decision, dict) or not decision.get("ok"):
+                motivo = (decision or {}).get("motivo") if isinstance(decision, dict) else None
+                results.append(f"❌ {term}: {motivo or 'Nao encontrado'}")
+                continue
 
-                         if isinstance(info_json, list) and info_json:
-                             item_data = info_json[0]
-                             price = item_data.get("preco", 0)
-                             name = item_data.get("produto", best_match.get("nome"))
-                             
-                             # SALVAR NO CACHE PARA MEMÓRIA COMPARTILHADA
-                             validated_products.append({
-                                 "ean": str(ean),
-                                 "nome": name,
-                                 "preco": float(price),
-                                 "termo_busca": term
-                             })
-                             
-                             # RETORNO TÉCNICO PARA O VENDEDOR
-                             # O Vendedor vai ler isso e decidir.
-                             results.append(f"🔍 [ANALISTA] ITEM VALIDADO:\n- Nome: {name}\n- EAN: {ean}\n- Preço Tabela: R$ {price:.2f}\n- Score Semântico: {best_match.get('score')}\n- Obs: {best_match.get('razao')}")
-                         else:
-                             results.append(f"⚠️ [ANALISTA] EAN {ean} ({best_match.get('nome')}) encontrado na base, mas SEM ESTOQUE/PREÇO no sistema de vendas.")
-                    except Exception as ex:
-                        logger.error(f"Erro parse estoque: {ex}")
-                        results.append(f"⚠️ [ANALISTA] Erro ao consultar preço do EAN {ean}.")
-            else:
-                results.append(f"❌ {term}: Não encontrei um produto correspondente no mix.")
+            nome = str(decision.get("nome") or "").strip()
+            preco = float(decision.get("preco") or 0.0)
 
+            if not nome:
+                results.append(f"❌ {term}: Resposta incompleta do analista")
+                continue
+
+            validated_products.append({"nome": nome, "preco": preco, "termo_busca": term})
+
+            razao = str(decision.get("razao") or "").strip()
+            results.append(
+                "🔍 [ANALISTA] ITEM VALIDADO:\n"
+                f"- Nome: {nome}\n"
+                f"- Preço Tabela: R$ {preco:.2f}\n"
+                f"- Obs: {razao}"
+            )
         except Exception as e:
-            logger.error(f"❌ [SUB-AGENT] Erro no processamento LLM para '{term}': {e}")
+            logger.error(f"❌ [SUB-AGENT] Erro no agente Analista para '{term}': {e}")
             results.append(f"❌ {term}: Erro interno na busca.")
 
     # SALVAR CACHE NO REDIS SE TIVER TELEFONE
@@ -196,4 +231,3 @@ def analista_produtos_tool(queries_str: str, telefone: str = None) -> str:
         return "Nenhum produto encontrado."
         
     return "\n".join(results)
-
