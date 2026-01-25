@@ -58,6 +58,9 @@ def _get_fast_llm():
 
 @tool("vector_search")
 def vector_search_tool(query: str, limit: int = 10) -> str:
+    """
+    Busca produtos no índice vetorial e retorna resultados relevantes.
+    """
     return search_products_vector(query, limit=limit)
 
 
