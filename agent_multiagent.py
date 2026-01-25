@@ -701,7 +701,7 @@ def caixa_node(state: AgentState) -> dict:
     # Verificar: mencionou total específico sem calcular
     import re
     total_match = re.search(r'total[:\s]*r\$\s*\d+', response_lower)
-    if total_match and "calcular_total_tool" not in tools_called:
+    if total_match and "calcular_total_tool" not in tools_called and "finalizar_pedido_tool" not in tools_called:
         hallucination_detected = True
         hallucination_reason = "mencionou total sem calcular"
     
