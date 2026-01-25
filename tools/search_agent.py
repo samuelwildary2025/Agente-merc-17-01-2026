@@ -220,7 +220,8 @@ def analista_produtos_tool(queries_str: str, telefone: str = None) -> str:
                 "🔍 [ANALISTA] ITEM VALIDADO:\n"
                 f"- Nome: {nome}\n"
                 f"- Preço Tabela: R$ {preco:.2f}\n"
-                f"- Obs: {razao}"
+                f"- Obs: {razao}\n"
+                f"\n🔔 DICA: use add_item_tool AGORA para adicionar este item."
             )
         except Exception as e:
             logger.error(f"❌ [SUB-AGENT] Erro no agente Analista para '{term}': {e}")
