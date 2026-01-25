@@ -35,18 +35,17 @@ def _get_openai_client() -> OpenAI:
         
         if not api_key:
             raise ValueError("OPENAI_EMBEDDING_API_KEY ou OPENAI_API_KEY não configurada")
-            
-        # Para embeddings, usamos sempre a URL padrão da OpenAI, 
-        # a menos que uma URL específica de embedding seja configurada (futuro)
-        # Se usarmos a base_url do Grok (settings.openai_api_base), vai falhar para embeddings.
-        # Portanto, forçamos o client de embedding a ser "puro" OpenAI se a chave for diferente.
+
+        # FIX: httpx 0.28.1 removed 'proxies' arg, causing error in OpenAI client init
+        # We explicitly pass a pre-configured httpx client to avoid this.
+        import httpx
+        http_client = httpx.Client()
         
-        # Lógica: Se temos uma chave de embedding separada, instanciamos cliente padrão.
-        # Se estamos usando a chave geral E base_url está setado (Grok), isso vai falhar 
-        # (pois Grok não tem embeddings).
-        # Solução: Cliente precisa fornecer chave separada.
-        
-        _openai_client = OpenAI(api_key=api_key, base_url="https://api.openai.com/v1")
+        _openai_client = OpenAI(
+            api_key=api_key, 
+            base_url="https://api.openai.com/v1",
+            http_client=http_client
+        )
     return _openai_client
 
 

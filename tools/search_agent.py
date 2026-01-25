@@ -20,7 +20,7 @@ from tools.http_tools import estoque_preco
 logger = setup_logger(__name__)
 
 _ANALISTA_PROMPT_CACHE: Optional[str] = None
-_PRODUCT_CONTEXT_CACHE: Optional[str] = None
+
 
 
 def _load_analista_prompt() -> str:
@@ -34,25 +34,7 @@ def _load_analista_prompt() -> str:
     return _ANALISTA_PROMPT_CACHE
 
 
-def _load_product_context_text() -> str:
-    global _PRODUCT_CONTEXT_CACHE
-    if _PRODUCT_CONTEXT_CACHE is not None:
-        return _PRODUCT_CONTEXT_CACHE
 
-    try:
-        base_dir = Path(__file__).resolve().parent.parent
-        rel_path = getattr(settings, "product_context_path", None) or ""
-        path = (base_dir / rel_path).resolve() if rel_path else None
-
-        if path and path.exists() and path.is_file():
-            _PRODUCT_CONTEXT_CACHE = path.read_text(encoding="utf-8")
-        else:
-            _PRODUCT_CONTEXT_CACHE = "{}"
-    except Exception as e:
-        logger.warning(f"⚠️ [SUB-AGENT] Falha ao carregar product_context: {e}")
-        _PRODUCT_CONTEXT_CACHE = "{}"
-
-    return _PRODUCT_CONTEXT_CACHE
 
 
 @tool("banco_vetorial")
@@ -75,13 +57,12 @@ def estoque_preco_tool(ean: str) -> str:
 
 def _run_analista_agent_for_term(term: str, telefone: Optional[str] = None) -> dict:
     prompt = _load_analista_prompt()
-    product_context = _load_product_context_text()
-
+    
     llm = _get_fast_llm()
     agent = create_react_agent(llm, [banco_vetorial_tool, estoque_preco_tool], prompt=prompt)
 
     user_payload = json.dumps(
-        {"termo": term, "product_context": json.loads(product_context)},
+        {"termo": term},
         ensure_ascii=False,
     )
 
@@ -152,10 +133,16 @@ def _get_fast_llm():
         if settings.openai_api_base:
             client_kwargs["base_url"] = settings.openai_api_base
 
+        import httpx
+        http_client = httpx.Client()
+        http_async_client = httpx.AsyncClient()
+        
         return ChatOpenAI(
             model=model_name,
             api_key=settings.openai_api_key,
             temperature=temp,
+            http_client=http_client,
+            http_async_client=http_async_client,
             **client_kwargs
         )
 
