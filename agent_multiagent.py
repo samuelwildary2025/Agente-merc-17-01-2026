@@ -221,6 +221,10 @@ def _call_analista(produtos: str) -> str:
 
 @tool("busca_analista")
 def busca_analista_tool(produtos: str) -> str:
+    """
+    Encaminha nomes de produtos para o analista e retorna produto + preço.
+    Use quando o cliente pedir itens e você precisar do preço oficial.
+    """
     return _call_analista(produtos)
 
 @tool
