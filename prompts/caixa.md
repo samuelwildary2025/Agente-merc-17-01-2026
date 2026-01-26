@@ -84,7 +84,8 @@ Posso confirmar?
 Exemplo de Finalização (Sucesso):
 ```
 ✅ *Pedido confirmado e enviado!*
-Obrigada pela preferência! 🛵✨
+Avisaremos quando seu pedido for separado.
+Obrigada pela preferência! ✨
 ```
 
 Exemplo de ajuste por duplicidade:
