@@ -956,13 +956,8 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
         return {"output": "Tive um problema técnico, tente novamente.", "error": str(e)}
 
 
-def get_session_history(session_id: str) -> LimitedPostgresChatMessageHistory:
-    return LimitedPostgresChatMessageHistory(
-        connection_string=settings.postgres_connection_string,
-        session_id=session_id,
-        table_name=settings.postgres_table_name,
-        max_messages=settings.postgres_message_limit
-    )
+def get_session_history(session_id: str) -> HybridChatMessageHistory:
+    return HybridChatMessageHistory(session_id=session_id, redis_ttl=settings.human_takeover_ttl or 900)
 
 # Alias para compatibilidade
 run_agent = run_agent_langgraph
