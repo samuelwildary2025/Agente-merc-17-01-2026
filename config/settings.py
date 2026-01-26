@@ -86,5 +86,11 @@ class Settings(BaseSettings):
     product_context_path: Optional[str] = "prompts/product_context.json"
 
 
+    @property
+    def redis_url(self) -> str:
+        """Monta a URL de conexão do Redis baseada nas variáveis"""
+        auth = f":{self.redis_password}@" if self.redis_password else ""
+        return f"redis://{auth}{self.redis_host}:{self.redis_port}/{self.redis_db}"
+
 # Instância global de configurações
 settings = Settings()

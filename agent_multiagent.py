@@ -36,7 +36,7 @@ from tools.redis_tools import (
     save_address,
     get_order_session
 )
-from memory.limited_postgres_memory import LimitedPostgresChatMessageHistory
+from memory.hybrid_memory import HybridChatMessageHistory
 
 logger = setup_logger(__name__)
 
@@ -854,16 +854,21 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
             clean_message = "Analise esta imagem/comprovante enviada."
         logger.info(f"📸 Mídia detectada: {image_url}")
 
-    # 2. Carregar histórico
-    history_handler = None
-    previous_messages: List[BaseMessage] = []
+    # 1. Recuperar histórico (Híbrido: Redis=Contexto, Postgres=Log)
+    from memory.hybrid_memory import HybridChatMessageHistory
+    history_handler = HybridChatMessageHistory(session_id=telefone, redis_ttl=settings.human_takeover_ttl or 900)
+    
+    previous_messages = []
     try:
-        history_handler = get_session_history(telefone)
         previous_messages = history_handler.messages
-        logger.info(f"📚 Histórico: {len(previous_messages)} mensagens anteriores")
+    except Exception as e:
+        logger.error(f"Erro ao buscar histórico híbrido: {e}")
+
+    # 2. Persistir mensagem do usuário (Salva em Redis e Postgres)
+    try:
         history_handler.add_user_message(mensagem)
     except Exception as e:
-        logger.error(f"Erro DB User: {e}")
+        logger.error(f"Erro ao salvar msg user no histórico: {e}")
 
     try:
         graph = get_multi_agent_graph()
