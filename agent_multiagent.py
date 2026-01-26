@@ -87,7 +87,39 @@ def add_item_tool(telefone: str, produto: str, quantidade: float = 1.0, observac
     - preco: preço por unidade
     """
     
-    prod_lower = produto.lower()
+    # IMPORTAR AQUI para evitar ciclo de importação
+    from tools.redis_tools import get_suggestions
+    import difflib
+
+    prod_lower = produto.lower().strip()
+    
+    # 0. TENTATIVA DE RECUPERAÇÃO DE PREÇO (Auto-Healing)
+    # Se o agente esqueceu o preço (0.0), tentamos achar nas sugestões recentes
+    if preco <= 0.01:
+        sugestoes = get_suggestions(telefone)
+        if sugestoes:
+            # Tentar match exato ou fuzzy
+            melhor_match = None
+            maior_score = 0
+            
+            for sug in sugestoes:
+                nome_sug = sug.get("nome", "").lower()
+                # Match exato de substring
+                if prod_lower in nome_sug or nome_sug in prod_lower:
+                    melhor_match = sug
+                    break
+                
+                # Match fuzzy (difflib)
+                ratio = difflib.SequenceMatcher(None, prod_lower, nome_sug).ratio()
+                if ratio > 0.6 and ratio > maior_score:
+                    maior_score = ratio
+                    melhor_match = sug
+            
+            if melhor_match:
+                preco_recuperado = float(melhor_match.get("preco", 0.0))
+                if preco_recuperado > 0:
+                    preco = preco_recuperado
+                    logger.info(f"✨ [AUTO-HEAL] Preço recuperado para '{produto}': R$ {preco:.2f} (baseado em '{melhor_match.get('nome')}')")
     
     WEIGHT_RULES = {
         "pao frances": 0.050, "pão francês": 0.050, "carioquinha": 0.050, "pao carioquinha": 0.050,
