@@ -121,32 +121,12 @@ def add_item_tool(telefone: str, produto: str, quantidade: float = 1.0, observac
                     preco = preco_recuperado
                     logger.info(f"✨ [AUTO-HEAL] Preço recuperado para '{produto}': R$ {preco:.2f} (baseado em '{melhor_match.get('nome')}')")
     
-    WEIGHT_RULES = {
-        "pao frances": 0.050, "pão francês": 0.050, "carioquinha": 0.050, "pao carioquinha": 0.050,
-        "pao sovado": 0.060, "pão sovado": 0.060, "massa fina": 0.060,
-        "mini bolinha": 0.016, "mini coxinha": 0.016,
-        "tomate": 0.150, "cebola": 0.150, "batata": 0.150,
-        "frango inteiro": 2.200, "frango abatido": 2.200,
-        "calabresa": 0.250, "paio": 0.250, "linguica": 0.250,
-        "bacon": 0.300,
-        "limao": 0.100, "limão": 0.100, "banana": 0.100, "maca": 0.100, "maçã": 0.100,
-        "mamao": 1.500, "mamão": 1.500, "melao": 1.500, "melão": 1.500,
-        "melancia": 2.000,
-        "abacate": 0.600
-    }
+    # --- LOGICA ANTIGA REMOVIDA: A conversão agora é feita pelo LLM ---
+    # O LLM deve calcular e enviar 'quantidade' já com o peso em KG.
+    # Ex: 6 pães * 0.050kg = 0.300kg -> Prompt envia quantidade=0.3
     
-    if unidades > 0:
-        peso_unitario = None
-        for key, weight in WEIGHT_RULES.items():
-            if key in prod_lower:
-                peso_unitario = weight
-                break
-        
-        if peso_unitario:
-            novo_peso = round(unidades * peso_unitario, 3)
-            if quantidade <= 0 or abs(quantidade - novo_peso) > 0.5:
-                quantidade = novo_peso
-                logger.info(f"⚖️ [ADD_ITEM] Peso calculado: {unidades} unidades × {peso_unitario}kg = {quantidade}kg")
+    if unidades > 0 and quantidade <= 0.01:
+         logger.warning(f"⚠️ [ADD_ITEM] Item '{produto}' com unidades={unidades} mas peso zerado. O LLM deveria ter calculado.")
     
     # Construir JSON do item para add_item_to_cart
     import json
@@ -161,14 +141,12 @@ def add_item_tool(telefone: str, produto: str, quantidade: float = 1.0, observac
     
     success = add_item_to_cart(telefone, item_json)
     if success:
-        if unidades > 0:
-            # Calcular valor estimado TOTAL para ajudar o LLM
-            valor_estimado = quantidade * preco
-            return f"✅ Adicionado: {unidades}x {produto} - Total Estimado: R$ {valor_estimado:.2f}. (IMPORTANTE: Avise que o valor final pode variar na balança pois é item de peso)"
-        else:
-            qtd_int = int(quantidade) if quantidade == int(quantidade) else quantidade
-            valor_total = quantidade * preco
-            return f"✅ Adicionado: {qtd_int}x {produto} - Total: R$ {valor_total:.2f}"
+         # Calcular valor estimado TOTAL (já que o peso deve vir correto do LLM)
+         valor_estimado = quantidade * preco
+         if unidades > 0:
+             return f"✅ Adicionado: {unidades}x {produto} ({quantidade:.3f}kg) - Total Estimado: R$ {valor_estimado:.2f}"
+         else:
+             return f"✅ Adicionado: {quantidade} {produto} - Total: R$ {valor_estimado:.2f}"
     return "❌ Erro ao adicionar item."
 
 @tool
