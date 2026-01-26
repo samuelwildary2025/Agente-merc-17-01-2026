@@ -155,6 +155,10 @@ def transcribe_audio(message_id: str = None, base64_data: str = None, mimetype: 
         return None
     
     try:
+        if not settings.google_api_key:
+            logger.error("❌ GOOGLE_API_KEY não configurada no .env! Necessária para transcrição de áudio.")
+            return None
+
         logger.info(f"🎧 Transcrevendo áudio com Gemini ({mime_type_clean})")
         
         from google import genai
