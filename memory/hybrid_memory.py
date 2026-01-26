@@ -2,7 +2,7 @@ from typing import List
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import BaseMessage
 from memory.redis_memory import RedisChatMessageHistory
-from memory.limited_postgres_memory import LimitedPostgresChatMessageHistory
+from config.settings import settings
 
 class HybridChatMessageHistory(BaseChatMessageHistory):
     """
@@ -16,7 +16,12 @@ class HybridChatMessageHistory(BaseChatMessageHistory):
         # Fonte da verdade para o contexto (Redis)
         self.redis_history = RedisChatMessageHistory(session_id=session_id, ttl=redis_ttl)
         # Log permanente (Postgres)
-        self.postgres_history = LimitedPostgresChatMessageHistory(session_id=session_id)
+        self.postgres_history = LimitedPostgresChatMessageHistory(
+            connection_string=settings.postgres_connection_string,
+            session_id=session_id,
+            table_name=settings.postgres_table_name,
+            max_messages=settings.postgres_message_limit
+        )
 
     @property
     def messages(self) -> List[BaseMessage]:
