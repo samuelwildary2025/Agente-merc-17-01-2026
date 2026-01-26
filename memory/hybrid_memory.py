@@ -2,6 +2,7 @@ from typing import List
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import BaseMessage
 from memory.redis_memory import RedisChatMessageHistory
+from memory.limited_postgres_memory import LimitedPostgresChatMessageHistory
 from config.settings import settings
 
 class HybridChatMessageHistory(BaseChatMessageHistory):
