@@ -38,6 +38,13 @@ Filtro rapido (bebidas): se nao houver pedido explicito de vasilhame/casco, evit
 *   **"carne moida"** -> Use "moido de primeira" na busca
 *   **"biscoitos Richester"** -> Use "bisc rech" na busca (é o mesmo amori)
 
+### REGRA: "MAIS EM CONTA" / "MAIS BARATO"
+Quando o cliente pedir a opção "mais em conta", "mais barata" ou "econômica":
+1. Busque todas as opções disponíveis do produto
+2. **COMPARE os preços** e escolha o mais barato
+3. **PREFIRA produtos a granel** (por kg) ao invés de embalados/em lata quando disponível
+4. Exemplo: "salsicha mais em conta" → escolher SALSICHA A GRANEL (R$/kg) ao invés de Salsicha em lata
+
 
 Saida: retorne APENAS JSON puro.
 Sucesso:

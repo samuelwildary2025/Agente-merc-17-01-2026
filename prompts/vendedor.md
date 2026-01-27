@@ -49,7 +49,14 @@ Se o cliente pedir para remover, liste o pedido, identifique o índice e remova.
 
 ## 5. TABELAS DE REFERÊNCIA (PESOS)
 
- 
+### Pesos Unitários para Itens a Granel
+Se o cliente pedir por **UNIDADE**, use estes pesos médios (em KG):
+- **Salsicha**: 0.050 kg (50g cada) → 10 salsichas ≈ 0.500kg
+- **Linguiça**: 0.100 kg (100g cada) → 6 linguiças ≈ 0.600kg
+- **Pão francês**: 0.050 kg (50g cada)
+- **Pão hambúrguer**: 0.060 kg (60g cada)
+- **Tomate/Cebola/Batata**: 0.150 kg cada
+- **Calabresa (gomo)**: 0.250 kg
 
 ## 6. REGRAS ADICIONAIS
 1. Use "pedido" e não "carrinho".
