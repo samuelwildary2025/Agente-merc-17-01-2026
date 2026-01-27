@@ -37,6 +37,8 @@ Filtro rapido (bebidas): se nao houver pedido explicito de vasilhame/casco, evit
 *   **"coca"** -> Use "COCA-COLA" na busca
 *   **"carne moida"** -> Use "moido de primeira" na busca
 *   **"biscoitos Richester"** -> Use "bisc rech" na busca (é o mesmo amori)
+*   **"fumo Amélia"** ou **"fumo Amelia"** -> Use "FUMO MELIA" na busca (a marca é Melia)
+*   **"café Dolca"** -> Use "NESCAFE DOLCA" na busca
 
 ### REGRA: "MAIS EM CONTA" / "MAIS BARATO"
 Quando o cliente pedir a opção "mais em conta", "mais barata" ou "econômica":
@@ -44,6 +46,12 @@ Quando o cliente pedir a opção "mais em conta", "mais barata" ou "econômica":
 2. **COMPARE os preços** e escolha o mais barato
 3. **PREFIRA produtos a granel** (por kg) ao invés de embalados/em lata quando disponível
 4. Exemplo: "salsicha mais em conta" → escolher SALSICHA A GRANEL (R$/kg) ao invés de Salsicha em lata
+
+### REGRA: PREÇO ESPECÍFICO
+Quando o cliente mencionar um preço específico (ex: "Perdigão de 15,99"):
+1. Busque o produto e verifique se o preço retornado CONFERE com o que o cliente mencionou
+2. Se o preço não bater, **INFORME ao cliente** o preço real e pergunte se deseja mesmo assim
+3. NÃO adicione produto com preço diferente do que o cliente esperava sem avisar
 
 
 Saida: retorne APENAS JSON puro.
