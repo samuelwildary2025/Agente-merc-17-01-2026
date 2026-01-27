@@ -440,6 +440,25 @@ def search_history_tool(telefone: str, keyword: str = None) -> str:
     """Busca mensagens anteriores do cliente com horários."""
     return search_message_history(telefone, keyword)
 
+@tool
+def calculadora_tool(expressao: str) -> str:
+    """
+    Calculadora simples para operações matemáticas gerais.
+    Use SEMPRE para conferir cálculos antes de informar valores ao cliente.
+    Ex: '4 * 2.29' (resultado: 9.16), '15.99 + 3.00' (resultado: 18.99)
+    """
+    try:
+        # Sanitização básica (permitir apenas math)
+        allowed = set("0123456789.+-*/() ")
+        if not all(c in allowed for c in expressao):
+            return "❌ Caracteres inválidos na expressão."
+        
+        # Eval seguro após sanitização
+        resultado = eval(expressao, {"__builtins__": None}, {})
+        return f"🔢 {expressao} = {resultado:.2f}"
+    except Exception as e:
+        return f"❌ Erro: {str(e)}"
+
 # ============================================
 # Listas de Ferramentas por Agente
 # ============================================
@@ -456,6 +475,7 @@ VENDEDOR_TOOLS = [
     get_pending_suggestions_tool,  # Memória compartilhada com Analista
     time_tool,
     search_history_tool,
+    calculadora_tool,  # Para cálculos precisos de valores
 ]
 
 CAIXA_TOOLS = [
@@ -464,6 +484,7 @@ CAIXA_TOOLS = [
     finalizar_pedido_tool,
     salvar_endereco_tool,
     time_tool,
+    calculadora_tool,  # Para conferir valores
 ]
 
 # ============================================

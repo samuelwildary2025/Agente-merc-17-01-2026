@@ -28,6 +28,9 @@ Filtro rapido (bebidas): se nao houver pedido explicito de vasilhame/casco, evit
 *   **"Frango"** -> Use "FRANGO ABATIDO" na busca
 *   **"carioquinha"** -> Use "PAO FRANCES" na busca
 *   **"coca"** -> Use "COCA-COLA" na busca
+*   **"carne moida"** -> Use "moido de primeira" na busca
+*   **"biscoitos Richester"** -> Use "bisc rech" na busca (é o mesmo amori)
+
 
 Saida: retorne APENAS JSON puro.
 Sucesso:
