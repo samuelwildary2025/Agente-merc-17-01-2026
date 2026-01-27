@@ -39,7 +39,10 @@ Filtro rapido (bebidas): se nao houver pedido explicito de vasilhame/casco, evit
 *   **"biscoitos Richester"** -> Use "bisc rech" na busca (é o mesmo amori)
 *   **"fumo Amélia"** ou **"fumo Amelia"** -> Use "FUMO MELIA" na busca (a marca é Melia)
 *   **"café Dolca"** -> Use "NESCAFE DOLCA" na busca
+*   **"sabonete liquido"** -> Use "sab liq" na busca
 
+
+ 
 ### REGRA: "MAIS EM CONTA" / "MAIS BARATO"
 Quando o cliente pedir a opção "mais em conta", "mais barata" ou "econômica":
 1. Busque todas as opções disponíveis do produto
