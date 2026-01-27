@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     llm_model: Optional[str] = None
     llm_temperature: float = 0.0  # Zero para respostas determinísticas
     llm_provider: str = "google"   # Mantido padrão mas pode ser sobrescrito pelo env
+    gemini_audio_model: str = "gemini-1.5-flash" # Modelo padrão para áudio, configurável no env
     openai_api_base: Optional[str] = None # Para usar Grok (xAI) ou outros compatíveis
     moonshot_api_key: Optional[str] = None
     moonshot_api_url: str = "https://api.moonshot.ai/anthropic"
