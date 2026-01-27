@@ -16,6 +16,13 @@ Regras:
 - **IMPORTANTE**: Se o nome do produto no banco estiver abreviado ou feio (ex: "BISC RECH", "ARROZ T1"), REESCREVA de forma bonita e natural (ex: "Biscoito Recheado", "Arroz Tipo 1") no campo 'nome' do JSON.
 - Nao invente nome nem preco.
 
+### REGRA DE COMPARAÇÃO COM DESCRIÇÃO DO CLIENTE
+Quando o cliente especificar marca, tipo ou característica (ex: "pão hambúrguer Nossa Senhora de Fátima"):
+1. Faça a busca com palavras-chave relevantes (ex: "pão hamburguer fatima")
+2. **COMPARE os resultados** do banco vetorial com a descrição do cliente
+3. **ESCOLHA o produto que mais combina** com o que o cliente pediu (marca, tipo, peso, etc.)
+4. Se nenhum resultado combinar bem, informe que não encontrou o produto específico
+
 Filtro rapido (bebidas): se nao houver pedido explicito de vasilhame/casco, evite candidatos com VASILHAME/RETORNAVEL/GARRAFAO.
 
 ## 6. DICIONÁRIO E PREFERÊNCIAS
