@@ -858,3 +858,72 @@ def clear_suggestions(telefone: str) -> bool:
     except Exception as e:
         logger.error(f"Erro ao limpar sugestões: {e}")
         return False
+
+# ============================================
+# Circuit Breaker (Disjuntor de API)
+# ============================================
+
+def circuit_failure_key(service: str) -> str:
+    return f"circuit:failures:{service}"
+
+def circuit_open_key(service: str) -> str:
+    return f"circuit:open:{service}"
+
+def check_circuit_open(service: str) -> bool:
+    """
+    Verifica se o disjuntor está ABERTO (serviço fora do ar).
+    Retorna True se estiver aberto (não deve chamar o serviço).
+    """
+    client = get_redis_client()
+    if client is None: return False
+    
+    try:
+        # Se a chave circuit:open existir, o circuito está aberto
+        is_open = client.get(circuit_open_key(service))
+        if is_open:
+            logger.warning(f"⚡ Circuit Breaker ABERTO para {service}. Bloqueando chamada.")
+            return True
+        return False
+    except:
+        return False
+
+def report_failure(service: str, threshold: int = 5, cooldown: int = 60) -> None:
+    """
+    Reporta uma falha no serviço. Se atingir o threshold, abre o circuito.
+    """
+    client = get_redis_client()
+    if client is None: return
+
+    try:
+        fkey = circuit_failure_key(service)
+        # Incrementa contador de falhas (TTL 60s para janela de falhas)
+        failures = client.incr(fkey)
+        if failures == 1:
+            client.expire(fkey, 60) # Janela de 1 min para acumular falhas
+            
+        if failures >= threshold:
+            # Abre o circuito!
+            okey = circuit_open_key(service)
+            client.set(okey, "1", ex=cooldown)
+            logger.critical(f"⚡⚡ CIRCUIT BREAKER DISPARADO: {service} falhou {failures}x. Pausando por {cooldown}s.")
+            # Limpa contador para reiniciar ciclo após cooldown
+            client.delete(fkey)
+            
+    except Exception as e:
+        logger.error(f"Erro no circuit breaker (fail): {e}")
+
+def report_success(service: str) -> None:
+    """
+    Reporta sucesso. Se o circuito estava instável, reseta contadores.
+    """
+    client = get_redis_client()
+    if client is None: return
+
+    try:
+        # Se houve sucesso, podemos limpar a contagem de falhas recente
+        # Isso implementa uma recuperação "Half-Open" implícita: se passar uma, zera as falhas.
+        fkey = circuit_failure_key(service)
+        if client.exists(fkey):
+            client.delete(fkey)
+    except Exception as e:
+        logger.error(f"Erro no circuit breaker (success): {e}")

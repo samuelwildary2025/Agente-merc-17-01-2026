@@ -344,6 +344,15 @@ def estoque_preco(ean: str) -> str:
         logger.error(msg)
         return msg
 
+    # CIRCUIT BREAKER CHECK
+    from tools.redis_tools import check_circuit_open, report_failure, report_success
+    SERVICE_NAME = "estoque_api"
+    
+    if check_circuit_open(SERVICE_NAME):
+        msg = "⚠️ O sistema de estoque está instável no momento. Tente novamente em alguns minutos."
+        logger.warning(f"Circuit Breaker impediu chamada para {ean}")
+        return msg
+
     # manter apenas dígitos no EAN
     ean_digits = "".join(ch for ch in ean if ch.isdigit())
     if not ean_digits:
@@ -358,8 +367,9 @@ def estoque_preco(ean: str) -> str:
     }
     
     # RETRY CONFIG
-    MAX_RETRIES = 3
-    TIMEOUTS = [15, 20, 25]  # Timeouts progressivos por tentativa
+    # RETRY CONFIG
+    MAX_RETRIES = 2
+    TIMEOUTS = [4, 6]  # Timeouts reduzidos (total máx 10s) para não travar o agente
     
     last_error = None
     
@@ -374,6 +384,9 @@ def estoque_preco(ean: str) -> str:
             
             resp = requests.get(url, headers=headers, timeout=timeout)
             resp.raise_for_status()
+
+            # SUCESSO DO CIRCUIT BREAKER
+            report_success(SERVICE_NAME)
 
             # resposta esperada: lista de objetos
             try:
@@ -534,6 +547,10 @@ def estoque_preco(ean: str) -> str:
         except requests.exceptions.Timeout:
             last_error = f"Timeout (tentativa {attempt + 1}/{MAX_RETRIES})"
             logger.warning(f"⏱️ {last_error}")
+            
+            # FALHA DO CIRCUIT BREAKER (TIMEOUT)
+            report_failure(SERVICE_NAME)
+            
             if attempt < MAX_RETRIES - 1:
                 time.sleep(0.5)  # Pequena pausa antes de retry
                 continue
@@ -542,10 +559,16 @@ def estoque_preco(ean: str) -> str:
             body = getattr(e.response, "text", "")
             msg = f"Erro HTTP ao consultar EAN: {status} - {body}"
             logger.error(msg)
+            
+            # FALHA DO CIRCUIT BREAKER (Erro Servidor 500+)
+            if str(status).startswith("5"):
+                report_failure(SERVICE_NAME)
+            
             return msg
         except requests.exceptions.RequestException as e:
             msg = f"Erro ao consultar EAN: {str(e)}"
             logger.error(msg)
+            report_failure(SERVICE_NAME)
             return msg
     
     # Se esgotou todas as tentativas

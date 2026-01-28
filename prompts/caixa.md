@@ -72,12 +72,12 @@ Respostas curtas, diretas e sem narrar ferramentas.
 Exemplo de Resumo Final:
 ```
 📝 Resumo do Pedido:
-- 1x Refrigerante Coca-Cola PET 2L (R$ 10.49)
+- 1x Refrigerante Coca-Cola PET 2L (R$ x.xx)
 
 📍 Endereço: Rua São João, 112 - Cabatan
 💳 Pagamento: Débito
-🚚 Frete Cabatan: R$ 3,00
-💰 *Total: R$ 13.49*
+🚚 Frete Cabatan: R$ xx.xx
+💰 *Total: R$ xx.xx*
 
 Posso confirmar?
 ```
