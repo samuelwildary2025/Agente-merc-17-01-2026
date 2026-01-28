@@ -847,21 +847,9 @@ def build_multi_agent_graph():
     )
     
     # Compilar
-    memory = MemorySaver()
-    return graph.compile(checkpointer=memory)
-
-# ============================================
-# Cache do Grafo
-# ============================================
-
-_multi_agent_graph = None
-
-def get_multi_agent_graph():
-    """Retorna o grafo multi-agente (com cache)."""
-    global _multi_agent_graph
-    if _multi_agent_graph is None:
-        _multi_agent_graph = build_multi_agent_graph()
-    return _multi_agent_graph
+    # REMOVIDO CHECKPOINTER: Para evitar vazamento de estado entre sessões (cross-talk).
+    # O estado é passado completo via 'messages' (Redis/Postgres) a cada execução.
+    return graph.compile()
 
 # ============================================
 # Função Principal
@@ -902,7 +890,9 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
         logger.error(f"Erro ao salvar msg user no histórico: {e}")
 
     try:
-        graph = get_multi_agent_graph()
+        # CONSTRUIR O GRAFO A CADA EXECUÇÃO para garantir ISOLAMENTO TOTAL
+        # Evita bugs de vazamento de contexto (MemorySaver global)
+        graph = build_multi_agent_graph()
         
         # 3. Construir mensagem com contexto
         from tools.time_tool import get_current_time
