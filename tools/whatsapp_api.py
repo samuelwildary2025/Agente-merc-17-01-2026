@@ -30,33 +30,52 @@ class WhatsAppAPI:
 
     def send_media(self, to: str, media_url: str = None, caption: str = "", base64_data: str = None, mimetype: str = "image/jpeg") -> bool:
         """
-        Envia mensagem de mídia (Imagem/Vídeo/PDF)
-        POST /send/media (Deduzido padrão, verificar)
+        Envia mensagem de mídia (Imagem/Vídeo/PDF) conforme DOC oficial
+        POST /send/media
+        Required: number, type, file
+        Optional: text (caption)
         """
         if not self.base_url: return False
         
-        # Endpoint provável baseado no padrão /send/text
         url = f"{self.base_url}/send/media"
-        
         clean_num = self._clean_number(to)
         
+        # Determinar Type
+        type_val = "image" # Default
+        if mimetype:
+            if "video" in mimetype: type_val = "video"
+            elif "audio" in mimetype: type_val = "audio" 
+            elif "application" in mimetype or "text" in mimetype or "pdf" in mimetype: type_val = "document"
+        elif media_url:
+            # Tentar inferir por extensão se mimetype não fornecido
+            lower_url = media_url.lower()
+            if any(ext in lower_url for ext in ['.mp4']): type_val = "video"
+            elif any(ext in lower_url for ext in ['.mp3', '.ogg', '.wav']): type_val = "audio"
+            elif any(ext in lower_url for ext in ['.pdf', '.doc', '.xls', '.txt', '.csv']): type_val = "document"
+
+        # Montar Payload
         payload = {
             "number": clean_num,
-            "caption": caption,
-            # Uazapi costuma usar 'mediaUrl' ou 'url' ou 'media'
-            # Se for base64: 'media': 'data:image/jpeg;base64,...'
-            "mediatype": "image" if "image" in mimetype else "document"
+            "type": type_val,
+            "text": caption or ""
         }
         
         if base64_data:
-            payload["media"] = f"data:{mimetype};base64,{base64_data}"
+            # DOC diz "file": "URL ou base64 do arquivo"
+            # Geralmente base64 precisa do prefixo data URI scheme para APIs modernas
+            payload["file"] = f"data:{mimetype};base64,{base64_data}"
         elif media_url:
-            payload["media"] = media_url
+            payload["file"] = media_url
             
-        logger.info(f"📷 Enviando mídia para {clean_num} via Uazapi")
+        # Se for document, pode precisar de docName (opcional, mas bom ter)
+        if type_val == "document" and media_url:
+            payload["docName"] = media_url.split("/")[-1] or "documento.pdf"
+            
+        logger.info(f"📷 Enviando mídia para {clean_num} (Type: {type_val}) via Uazapi")
         
         try:
-            resp = requests.post(url, headers=self._get_headers(), json=payload, timeout=30)
+            resp = requests.post(url, headers=self._get_headers(), json=payload, timeout=60) # Timeout maior para media
+            
             if resp.status_code not in [200, 201]:
                 logger.error(f"❌ Erro envio mídia ({resp.status_code}): {resp.text[:200]}")
                 return False
