@@ -185,34 +185,69 @@ def analista_produtos_tool(queries_str: str, telefone: str = None) -> str:
     mode = "lote" if len(extracted_terms) > 1 else "individual"
     logger.info(f"🕵️ [SUB-AGENT] Modo de busca: {mode} | termos: {extracted_terms}")
     
-    for term in extracted_terms:
+    # Função helper para processar cada termo em paralelo
+    def _process_single_term(term: str):
         try:
             decision = _run_analista_agent_for_term(term, telefone=telefone)
             if not isinstance(decision, dict) or not decision.get("ok"):
                 motivo = (decision or {}).get("motivo") if isinstance(decision, dict) else None
-                results.append(f"❌ {term}: {motivo or 'Nao encontrado'}")
-                continue
+                return (f"❌ {term}: {motivo or 'Nao encontrado'}", None)
 
             nome = str(decision.get("nome") or "").strip()
             preco = float(decision.get("preco") or 0.0)
 
             if not nome:
-                results.append(f"❌ {term}: Resposta incompleta do analista")
-                continue
+                return (f"❌ {term}: Resposta incompleta do analista", None)
 
-            validated_products.append({"nome": nome, "preco": preco, "termo_busca": term})
-
+            validated_item = {"nome": nome, "preco": preco, "termo_busca": term}
             razao = str(decision.get("razao") or "").strip()
-            results.append(
+            
+            result_str = (
                 "🔍 [ANALISTA] ITEM VALIDADO:\n"
                 f"- Nome: {nome}\n"
                 f"- Preço Tabela: R$ {preco:.2f}\n"
                 f"- Obs: {razao}\n"
                 f"\n🔔 DICA: use add_item_tool AGORA para adicionar este item."
             )
+            return (result_str, validated_item)
+            
         except Exception as e:
             logger.error(f"❌ [SUB-AGENT] Erro no agente Analista para '{term}': {e}")
-            results.append(f"❌ {term}: Erro interno na busca.")
+            return (f"❌ {term}: Erro interno na busca.", None)
+
+    # Execução Paralela
+    import concurrent.futures
+    
+    # Limitar número de workers para não saturar
+    max_workers = min(10, len(extracted_terms) + 1)
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submeter tarefas mantendo a ordem: mapa {future: index}
+        future_to_index = {
+            executor.submit(_process_single_term, term): i 
+            for i, term in enumerate(extracted_terms)
+        }
+        
+        # Array para guardar resultados na ordem correta
+        ordered_results = [None] * len(extracted_terms)
+        
+        for future in concurrent.futures.as_completed(future_to_index):
+            index = future_to_index[future]
+            try:
+                ordered_results[index] = future.result()
+            except Exception as e:
+                logger.error(f"Erro fatal processando future index {index}: {e}")
+                ordered_results[index] = (f"❌ Erro interno.", None)
+                
+    # Coletar resultados finais
+    for res in ordered_results:
+        if not res: 
+            continue
+        res_str, val_item = res
+        if res_str:
+            results.append(res_str)
+        if val_item:
+            validated_products.append(val_item)
 
     # SALVAR CACHE NO REDIS SE TIVER TELEFONE
     if telefone and validated_products:

@@ -69,42 +69,12 @@ def run_vector_search_subagent(query: str, limit: int = 10, thread_id: Optional[
     if not q:
         return "Nenhum produto encontrado."
 
-    logger.info(f"🧩 [SUB-SUB-AGENT][VETORIAL] Buscando: '{q}' (limit={limit})")
-
-    llm = _get_fast_llm()
-    agent = create_react_agent(llm, [vector_search_tool], prompt=VECTOR_SEARCH_AGENT_PROMPT)
-
-    config = {"recursion_limit": 6}
-    if thread_id:
-        config["configurable"] = {"thread_id": thread_id}
-
-    result = agent.invoke(
-        {
-            "messages": [
-                HumanMessage(
-                    content=json.dumps(
-                        {"query": q, "limit": int(limit)}, ensure_ascii=False
-                    )
-                )
-            ]
-        },
-        config,
-    )
-
-    messages = result.get("messages", []) if isinstance(result, dict) else []
-    tool_outputs = [
-        m.content
-        for m in messages
-        if getattr(m, "type", None) == "tool" and getattr(m, "name", None) == "vector_search"
-    ]
-    if tool_outputs:
-        return tool_outputs[-1]
-
-    for m in reversed(messages):
-        if getattr(m, "type", None) == "ai":
-            content = m.content if isinstance(m.content, str) else str(m.content)
-            if content and content.strip():
-                return content
-
-    logger.warning("Resposta vazia do sub-subagente vetorial")
-    return "Nenhum produto encontrado."
+    logger.info(f"🧩 [SUB-SUB-AGENT][VETORIAL] Buscando (DIRECT): '{q}' (limit={limit})")
+    
+    # Otimização: Chamada direta à função de busca, removendo layer de agente desnecessário
+    # O Analista já é o agente inteligente que decide o que buscar.
+    try:
+        return search_products_vector(q, limit=limit)
+    except Exception as e:
+        logger.error(f"Erro na busca vetorial direta: {e}")
+        return f"Erro ao buscar produtos: {str(e)}"
