@@ -961,6 +961,36 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
         if not output or not output.strip():
             output = "Desculpe, tive um problema ao processar. Pode repetir por favor?"
         
+        # 6.5. Extrair Mídia de ToolOutputs (Ex: Encarte)
+        media_url = None
+        try:
+            for msg in reversed(result.get("messages", [])):
+                if isinstance(msg, ToolMessage) and msg.name == "consultar_encarte":
+                    # Tente extrair URL do JSON
+                    import json
+                    try:
+                        data = json.loads(msg.content)
+                        # Tenta pegar lista de ativos primeiro
+                        actives = data.get("active_encartes_urls", [])
+                        if actives and isinstance(actives, list) and len(actives) > 0:
+                            media_url = actives[0] # Pega o primeiro por enquanto
+                        else:
+                            media_url = data.get("encarte_url") or data.get("url")
+                            
+                        if media_url and not media_url.startswith("http"):
+                           # Fallback para domínio se for relativo (embora a tool já deva corrigir)
+                           # Mas a tool corrigiu no JSON, então deve estar ok.
+                           # Se ainda for relativo:
+                           media_url = f"https://app.aimerc.com.br{media_url}"
+                           
+                        if media_url:
+                            logger.info(f"🖼️ Mídia extraída do tool output: {media_url}")
+                            break
+                    except:
+                        pass
+        except Exception as e:
+            logger.error(f"Erro ao extrair mídia: {e}")
+
         logger.info(f"✅ [MULTI-AGENT] Resposta: {output[:200]}...")
         
         # 7. Salvar histórico (IA)
@@ -970,7 +1000,7 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
             except Exception as e:
                 logger.error(f"Erro DB AI: {e}")
 
-        return {"output": output, "error": None}
+        return {"output": output, "media_url": media_url, "error": None}
         
     except Exception as e:
         logger.error(f"Falha agente: {e}", exc_info=True)

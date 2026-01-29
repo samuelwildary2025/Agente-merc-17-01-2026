@@ -102,6 +102,7 @@ async def process_message(ctx: Dict[str, Any], telefone: str, mensagem: str, mes
         loop = asyncio.get_event_loop()
         res = await loop.run_in_executor(None, run_agent, telefone, mensagem)
         txt = res.get("output", "Erro ao processar.")
+        media_url = res.get("media_url")
         
         # 5. Parar "Digitar"
         whatsapp.send_presence(num, "paused")
@@ -109,6 +110,17 @@ async def process_message(ctx: Dict[str, Any], telefone: str, mensagem: str, mes
         
         # 6. Enviar Mensagem (também síncrono)
         await loop.run_in_executor(None, _send_whatsapp_message, telefone, txt)
+        
+        # 7. Enviar Mídia Extraída (se houver e não estiver no texto)
+        if media_url:
+            # Verifica se já não foi enviada pelo _send_whatsapp_message (que extrai URLs do texto)
+            if media_url not in txt:
+                logger.info(f"📤 Enviando mídia extraída do agente: {media_url}")
+                try:
+                     # Usamos run_in_executor pois requests é síncrono
+                    await loop.run_in_executor(None, whatsapp.send_media, telefone, media_url, "")
+                except Exception as e:
+                    logger.error(f"Erro ao enviar mídia extraída: {e}")
         
         logger.info(f"✅ Mensagem processada com sucesso: {telefone}")
         return "success"
