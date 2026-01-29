@@ -182,7 +182,9 @@ def remove_item_tool(telefone: str, item_index: int) -> str:
     Remover um item do carrinho pelo número (índice 1-based, como mostrado no view_cart).
     Ex: Para remover o item 1, passe 1.
     """
-    success = remove_item_from_cart(telefone, item_index)
+    # Converter para índice 0-based
+    idx_zero_based = int(item_index) - 1
+    success = remove_item_from_cart(telefone, idx_zero_based)
     if success:
         return f"✅ Item {item_index} removido do carrinho."
     return f"❌ Erro: Item {item_index} não encontrado."
@@ -638,7 +640,7 @@ def vendedor_node(state: AgentState) -> dict:
     # Configuração
     config = {
         "configurable": {"thread_id": state["phone"]},
-        "recursion_limit": 15
+        "recursion_limit": 25
     }
     
     # Executar
@@ -701,7 +703,7 @@ def caixa_node(state: AgentState) -> dict:
     # Configuração
     config = {
         "configurable": {"thread_id": state["phone"]},
-        "recursion_limit": 10  # Limite menor, operações mais simples
+        "recursion_limit": 15  # Limite menor, operações mais simples
     }
     
     # Executar
