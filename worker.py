@@ -117,8 +117,28 @@ async def process_message(ctx: Dict[str, Any], telefone: str, mensagem: str, mes
             if media_url not in txt:
                 logger.info(f"📤 Enviando mídia extraída do agente: {media_url}")
                 try:
-                     # Usamos run_in_executor pois requests é síncrono
-                    await loop.run_in_executor(None, whatsapp.send_media, telefone, media_url, "")
+                    # Baixar imagem e enviar como Base64 (mais robusto)
+                    import requests
+                    import base64
+                    
+                    def _download_and_send():
+                        try:
+                            # 1. Download
+                            r = requests.get(media_url, timeout=20)
+                            r.raise_for_status()
+                            
+                            # 2. Base64
+                            b64 = base64.b64encode(r.content).decode('utf-8')
+                            mime = r.headers.get("Content-Type", "image/jpeg")
+                            
+                            # 3. Send
+                            return whatsapp.send_media(telefone, base64_data=b64, mimetype=mime, caption="")
+                        except Exception as dl_err:
+                            logger.error(f"Erro download media extra: {dl_err}")
+                            # Fallback para envio de URL
+                            return whatsapp.send_media(telefone, media_url=media_url, caption="")
+
+                    await loop.run_in_executor(None, _download_and_send)
                 except Exception as e:
                     logger.error(f"Erro ao enviar mídia extraída: {e}")
         

@@ -966,8 +966,8 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
         try:
             for i, msg in enumerate(reversed(result.get("messages", []))):
                 # DEBUG: Verificando tipos de mensagens no histórico
-                if i < 5: # Logar apenas as últimas 5 para não poluir
-                    logger.debug(f"[MEDIA_CHECK] Msg {i}: {type(msg).__name__} | Name: {getattr(msg, 'name', 'N/A')} | Content: {str(msg.content)[:50]}...")
+                if i < 10: # Aumentar para 10
+                    logger.info(f"[MEDIA_CHECK] Msg {i}: {type(msg).__name__} | Name: {getattr(msg, 'name', 'N/A')} | Content: {str(msg.content)[:50]}...")
                 
                 if isinstance(msg, ToolMessage) and msg.name == "consultar_encarte":
                     logger.info(f"✅ ToolMessage de encarte encontrado! Content: {msg.content[:100]}...")
