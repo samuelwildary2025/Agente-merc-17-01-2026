@@ -373,6 +373,49 @@ def search_products_vector(query: str, limit: int = 20) -> str:
                 except Exception as e:
                     logger.warning(f"⚠️ [RERANK FAILED] Falha no FlashRank, mantendo ordem original: {e}")
                 
+                # =========================================================================
+                # 🎯 RE-RANKING PARA TERMOS GENÉRICOS (EX: "TOMATE", "ABACAXI")
+                # =========================================================================
+                # Se a query for uma única palavra, prioriza nomes curtos que começam com o termo.
+                # Isso evita que "Tomate Cajá" venha antes de "Tomate" só por score vetorial.
+                query_words = query.strip().split()
+                if len(query_words) == 1 and len(query) > 2:
+                     logger.info(f"📏 [GENERIC BOOST] Aplicando ordenação por tamanho de nome para: '{query}'")
+                     
+                     def get_sort_key(item):
+                        # Extrair nome usando a mesma lógica do formatter
+                        _, name = _extract_ean_and_name(item)
+                        name_clean = name.lower().strip()
+                        query_clean = query.lower().strip()
+                        
+                        # Penalidade base (preserva ordem original do ranker se não casar regras)
+                        # Usamos index original para estabilidade
+                        original_score = item.get("similarity", 0)
+                        
+                        # 1. Match Exato (Melhor possível)
+                        if name_clean == query_clean:
+                            return (0, 0, -original_score)
+                        
+                        # 2. Começa com a query (Ex: "Tomate" vs "Tomate Cajá")
+                        # Ordena por tamanho: menor nome ganha (Tomate < Tomate Cajá)
+                        if name_clean.startswith(query_clean):
+                            return (1, len(name_clean), -original_score)
+                            
+                        # 3. Contém a query (Ex: "Molho de Tomate")
+                        if query_clean in name_clean:
+                            return (2, len(name_clean), -original_score)
+                            
+                        # 4. Sem match direto no nome (confia no vetor)
+                        return (3, 0, -original_score)
+
+                     # Reordenar resultados
+                     results.sort(key=get_sort_key)
+                     
+                     # Logar top 3 após reordenação
+                     for i, r in enumerate(results[:3]):
+                         _, name = _extract_ean_and_name(r)
+                         logger.info(f"   🏆 Top {i+1} Generic: {name}")
+
                 # 3. Processar e formatar resultados
                 return _format_results(results)
     
