@@ -638,7 +638,7 @@ def vendedor_node(state: AgentState) -> dict:
     # Configuração
     config = {
         "configurable": {"thread_id": state["phone"]},
-        "recursion_limit": 15
+        "recursion_limit": 45
     }
     
     # Executar
