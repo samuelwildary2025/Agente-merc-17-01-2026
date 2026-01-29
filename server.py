@@ -988,7 +988,8 @@ async def webhook(req: Request, tasks: BackgroundTasks):
         pl = await req.json()
         
         # Log bruto para capturar segredos do payload
-        logger.info(f"📥 RAW: {pl.get('event', '?')} | Keys: {list(pl.keys())} | DataKeys: {list(pl.get('data', {}).keys()) if isinstance(pl.get('data'), dict) else '?'}")
+        instance_name = pl.get('instanceName') or (pl.get('data') or {}).get('instanceName') or pl.get('instance')
+        logger.info(f"📥 RAW: {pl.get('event', '?')} | Instance: {instance_name} | Keys: {list(pl.keys())} | DataKeys: {list(pl.get('data', {}).keys()) if isinstance(pl.get('data'), dict) else '?'}")
         
         data = _extract_incoming(pl)
         tel, txt, from_me = data["telefone"], data["mensagem_texto"], data["from_me"]
