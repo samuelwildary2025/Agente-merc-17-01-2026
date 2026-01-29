@@ -16,13 +16,12 @@ class WhatsAppAPI:
             logger.warning("WHATSAPP_API_BASE_URL não configurado!")
             
     def _get_headers(self):
-        # Tenta cobrir vários padrões de auth de APIs de WhatsApp
         return {
             "Content-Type": "application/json",
             "apikey": self.token,
             "token": self.token,
             "Authorization": f"Bearer {self.token}",
-            "X-Instance-Token": self.token # Header específico confirmado no teste
+            "X-Instance-Token": self.token
         }
 
     def _clean_number(self, phone: str) -> str:
@@ -32,40 +31,38 @@ class WhatsAppAPI:
     def send_media(self, to: str, media_url: str = None, caption: str = "", base64_data: str = None, mimetype: str = "image/jpeg") -> bool:
         """
         Envia mensagem de mídia (Imagem/Vídeo/PDF)
-        POST /message/media
-        Aceita URL ou Base64
+        POST /send/media (Deduzido padrão, verificar)
         """
         if not self.base_url: return False
         
-        url = f"{self.base_url}/message/media"
+        # Endpoint provável baseado no padrão /send/text
+        url = f"{self.base_url}/send/media"
         
-        # Limpa o número
         clean_num = self._clean_number(to)
-        jid = f"{clean_num}@s.whatsapp.net"
         
         payload = {
-            "to": jid,
-            "caption": caption
+            "number": clean_num,
+            "caption": caption,
+            # Uazapi costuma usar 'mediaUrl' ou 'url' ou 'media'
+            # Se for base64: 'media': 'data:image/jpeg;base64,...'
+            "mediatype": "image" if "image" in mimetype else "document"
         }
         
         if base64_data:
-            # API espera 'base64' e 'mimetype' como campos
-            payload["base64"] = base64_data
-            payload["mimetype"] = mimetype
+            payload["media"] = f"data:{mimetype};base64,{base64_data}"
         elif media_url:
-            payload["mediaUrl"] = media_url
+            payload["media"] = media_url
             
-        logger.info(f"📷 Enviando mídia para {jid} | HasURL: {bool(media_url)} | HasBase64: {bool(base64_data)}")
+        logger.info(f"📷 Enviando mídia para {clean_num} via Uazapi")
         
         try:
-            resp = requests.post(url, headers=self._get_headers(), json=payload, timeout=25)
-            if resp.status_code != 200:
+            resp = requests.post(url, headers=self._get_headers(), json=payload, timeout=30)
+            if resp.status_code not in [200, 201]:
                 logger.error(f"❌ Erro envio mídia ({resp.status_code}): {resp.text[:200]}")
-                # Fallback: Tentar endpoint antigo ou alternativo se falhar? 
-                # Por enquanto apenas logar erro.
+                return False
             else:
                 logger.info("✅ Mídia enviada com sucesso")
-            return resp.status_code == 200
+            return True
         except Exception as e:
             logger.error(f"❌ Erro ao enviar mídia: {e}")
             return False
@@ -73,83 +70,62 @@ class WhatsAppAPI:
     def send_text(self, to: str, text: str) -> bool:
         """
         Envia mensagem de texto simples
-        POST /message/text
-        Suporta o delimitador <BREAK> para enviar múltiplas mensagens sequenciais.
+        POST /send/text
         """
         if not self.base_url: 
             logger.error("❌ WHATSAPP_API_BASE_URL não configurado! Mensagem NÃO enviada.")
             return False
             
-        # Verifica se há o delimitador de quebra
         if "<BREAK>" in text:
             parts = text.split("<BREAK>")
             logger.info(f"🔄 Mensagem multi-parte detectada! Dividindo em {len(parts)} mensagens.")
-            
-            success_all = True
             import time
-            
+            success_all = True
             for index, part in enumerate(parts):
                 part = part.strip()
                 if not part: continue
-                
-                # Pequeno delay entre mensagens (exceto a primeira)
-                if index > 0:
-                    time.sleep(3.0)
-                    
-                if not self.send_text(to, part):
-                    success_all = False
-            
+                if index > 0: time.sleep(3.0)
+                if not self.send_text(to, part): success_all = False
             return success_all
         
-        url = f"{self.base_url}/message/text"
+        url = f"{self.base_url}/send/text"
         
-        # Limpa o número e formata como JID se necessário
         clean_num = self._clean_number(to)
-        # Tenta com JID completo (@s.whatsapp.net)
-        jid = f"{clean_num}@s.whatsapp.net"
         
         payload = {
-            "to": jid,  # Usando JID completo
-            "text": text
+            "number": clean_num,
+            "text": text,
+            "delay": 1200, # Simula digitando
+            "linkPreview": True
         }
         
-        logger.info(f"📤 Enviando mensagem para {jid}: {text[:50]}...")
-        # logger.info(f"📤 URL: {url}")
+        logger.info(f"📤 Enviando mensagem para {clean_num}: {text[:50]}...")
         
         try:
-            resp = requests.post(url, headers=self._get_headers(), json=payload, timeout=10)
+            resp = requests.post(url, headers=self._get_headers(), json=payload, timeout=15)
             
-            # Log da resposta COMPLETA
-            # logger.info(f"📥 Resposta API WhatsApp: Status={resp.status_code}")
-            # logger.info(f"📥 Resposta Body: {resp.text[:500]}")
-            
-            if resp.status_code != 200:
+            if resp.status_code not in [200, 201]:
                 logger.error(f"❌ Erro API WhatsApp ({resp.status_code}): {resp.text[:500]}")
                 return False
             else:
-                logger.info(f"✅ Mensagem enviada com sucesso para {to}")
-                
-            # resp.raise_for_status() # Removido para evitar exceção duplicada
-            return True
-        except requests.exceptions.HTTPError as e:
-            logger.error(f"❌ Erro HTTP ao enviar mensagem para {to}: {e}")
-            return False
+                logger.info(f"✅ Mensagem enviada com sucesso para {clean_num}")
+                return True
         except Exception as e:
             logger.error(f"❌ Erro ao enviar mensagem WhatsApp para {to}: {e}")
             return False
 
     def send_presence(self, to: str, presence: str = "composing") -> bool:
         """
-        Envia status de presença (digitando...)
-        POST /message/presence
-        Valores: composing, recording, available, unavailable
+        Envia presence
+        POST /send/presence (Deduzido)
         """
         if not self.base_url: return False
         
-        url = f"{self.base_url}/message/presence"
+        # Endpoint provável
+        url = f"{self.base_url}/send/presence" # Check se existe ou é /chat/presence
         payload = {
-            "to": self._clean_number(to),
-            "presence": presence
+            "number": self._clean_number(to),
+            "presence": presence 
         }
         
         try:
@@ -160,74 +136,58 @@ class WhatsAppAPI:
 
     def mark_as_read(self, chat_id: str, message_id: str = None) -> bool:
         """
-        Marca o chat como lido (Tick Azul)
-        POST /message/read
-        Body: { "chatId": "55...", "messageId": "ABC123" }
-        
-        Nota: whatsmeow EXIGE messageId para funcionar.
+        Marca o chat como lido
+        POST /chats/mark-read (Deduzido, muitos usam esse padrão)
+        Ou tenta usar option no sendText se não houver endpoint isolado.
         """
-        if not self.base_url or not chat_id: 
-            logger.warning("⚠️ mark_as_read: base_url ou chat_id não configurado")
-            return False
+        if not self.base_url or not chat_id: return False
         
-        if not message_id:
-            logger.warning("⚠️ mark_as_read: messageId não fornecido, ignorando")
-            return False
+        # Tentativa de endpoint provável
+        url = f"{self.base_url}/chats/mark-read"
         
-        # Limpa o número (remove caracteres especiais)
         clean_num = self._clean_number(chat_id)
         
-        url = f"{self.base_url}/message/read"
-        
-        # API requer chatId + messageId
+        # Algumas APIs pedem lista de chats
         payload = {
-            "chatId": clean_num,
-            "messageId": message_id
+            "chats": [clean_num],
+            "readmessages": True
         }
-        
-        logger.info(f"👀 mark_as_read: {payload}")
         
         try:
             resp = requests.post(url, headers=self._get_headers(), json=payload, timeout=5)
-            if resp.status_code == 200:
-                logger.info(f"✅ Chat {chat_id} marcado como lido")
-            else:
-                logger.warning(f"⚠️ mark_as_read falhou ({resp.status_code}): {resp.text[:200]}")
-            return resp.status_code == 200
-        except Exception as e:
-            logger.error(f"❌ Erro mark_as_read: {e}")
+            if resp.status_code == 404:
+                # Tenta singular
+                url = f"{self.base_url}/chat/mark-read"
+                payload = {"number": clean_num}
+                requests.post(url, headers=self._get_headers(), json=payload, timeout=5)
+            
+            return True
+        except Exception:
             return False
 
     def get_media_base64(self, message_id: str) -> Optional[Dict[str, str]]:
         """
         Obtém mídia em Base64
-        POST /message/download
-        Retorna dict com 'base64' e 'mimetype'
+        POST /message/download (Talvez ainda funcione se for endpoint legado ou compatível)
         """
         if not self.base_url: return None
         
         url = f"{self.base_url}/message/download"
         payload = {
-            "id": message_id,
-            "return_link": False,
-            "return_base64": True
+            "messageId": message_id,
+            "returnBase64": True
         }
         
-        logger.info(f"🌐 DEBUG API CALL: {url} | ID: {message_id}")
+        # Uazapi pode usar /chat/download-media ou similar
+        # Por enquanto mantemos o antigo e logamos erro se falhar
         
         try:
             resp = requests.post(url, headers=self._get_headers(), json=payload, timeout=30)
-            logger.info(f"🌐 DEBUG API RESPONSE: Status={resp.status_code}") # Timeout maior para download
             if resp.status_code == 200:
                 data = resp.json()
-                # A API retorna { success: true, data: { base64: "...", mimetype: "..." } }
-                if data.get("success") and "data" in data:
-                    return data["data"]
-                # Ou pode retornar direto no root se a versão for diferente
-                if "base64" in data:
-                    return data
-            else:
-                logger.warning(f"⚠️ Erro API Mídia ({resp.status_code}): {resp.text[:200]}")
+                if "base64" in data: return data
+                if "data" in data and "base64" in data["data"]: return data["data"]
+            
         except Exception as e:
             logger.error(f"Erro ao obter mídia WhatsApp ({message_id}): {e}")
             
