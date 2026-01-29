@@ -964,8 +964,13 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
         # 6.5. Extrair Mídia de ToolOutputs (Ex: Encarte)
         media_url = None
         try:
-            for msg in reversed(result.get("messages", [])):
+            for i, msg in enumerate(reversed(result.get("messages", []))):
+                # DEBUG: Verificando tipos de mensagens no histórico
+                if i < 5: # Logar apenas as últimas 5 para não poluir
+                    logger.debug(f"[MEDIA_CHECK] Msg {i}: {type(msg).__name__} | Name: {getattr(msg, 'name', 'N/A')} | Content: {str(msg.content)[:50]}...")
+                
                 if isinstance(msg, ToolMessage) and msg.name == "consultar_encarte":
+                    logger.info(f"✅ ToolMessage de encarte encontrado! Content: {msg.content[:100]}...")
                     # Tente extrair URL do JSON
                     import json
                     try:
@@ -987,7 +992,7 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
                             logger.info(f"🖼️ Mídia extraída do tool output: {media_url}")
                             break
                     except:
-                        pass
+                        logger.error("Erro parse JSON media")
         except Exception as e:
             logger.error(f"Erro ao extrair mídia: {e}")
 
