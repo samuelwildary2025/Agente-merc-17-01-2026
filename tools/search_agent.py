@@ -185,45 +185,34 @@ def analista_produtos_tool(queries_str: str, telefone: str = None) -> str:
     mode = "lote" if len(extracted_terms) > 1 else "individual"
     logger.info(f"🕵️ [SUB-AGENT] Modo de busca: {mode} | termos: {extracted_terms}")
     
-    # Execução Paralela para velocidade
-    from concurrent.futures import ThreadPoolExecutor, as_completed
-    
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        future_to_term = {
-            executor.submit(_run_analista_agent_for_term, term, telefone): term 
-            for term in extracted_terms
-        }
-        
-        for future in as_completed(future_to_term):
-            term = future_to_term[future]
-            try:
-                decision = future.result()
-                
-                if not isinstance(decision, dict) or not decision.get("ok"):
-                    motivo = (decision or {}).get("motivo") if isinstance(decision, dict) else None
-                    results.append(f"❌ {term}: {motivo or 'Nao encontrado'}")
-                    continue
+    for term in extracted_terms:
+        try:
+            decision = _run_analista_agent_for_term(term, telefone=telefone)
+            if not isinstance(decision, dict) or not decision.get("ok"):
+                motivo = (decision or {}).get("motivo") if isinstance(decision, dict) else None
+                results.append(f"❌ {term}: {motivo or 'Nao encontrado'}")
+                continue
 
-                nome = str(decision.get("nome") or "").strip()
-                preco = float(decision.get("preco") or 0.0)
+            nome = str(decision.get("nome") or "").strip()
+            preco = float(decision.get("preco") or 0.0)
 
-                if not nome:
-                    results.append(f"❌ {term}: Resposta incompleta do analista")
-                    continue
+            if not nome:
+                results.append(f"❌ {term}: Resposta incompleta do analista")
+                continue
 
-                validated_products.append({"nome": nome, "preco": preco, "termo_busca": term})
+            validated_products.append({"nome": nome, "preco": preco, "termo_busca": term})
 
-                razao = str(decision.get("razao") or "").strip()
-                results.append(
-                    "🔍 [ANALISTA] ITEM VALIDADO:\n"
-                    f"- Nome: {nome}\n"
-                    f"- Preço Tabela: R$ {preco:.2f}\n"
-                    f"- Obs: {razao}\n"
-                    f"\n🔔 DICA: use add_item_tool AGORA para adicionar este item."
-                )
-            except Exception as e:
-                logger.error(f"❌ [SUB-AGENT] Erro no agente Analista para '{term}': {e}")
-                results.append(f"❌ {term}: Erro interno na busca.")
+            razao = str(decision.get("razao") or "").strip()
+            results.append(
+                "🔍 [ANALISTA] ITEM VALIDADO:\n"
+                f"- Nome: {nome}\n"
+                f"- Preço Tabela: R$ {preco:.2f}\n"
+                f"- Obs: {razao}\n"
+                f"\n🔔 DICA: use add_item_tool AGORA para adicionar este item."
+            )
+        except Exception as e:
+            logger.error(f"❌ [SUB-AGENT] Erro no agente Analista para '{term}': {e}")
+            results.append(f"❌ {term}: Erro interno na busca.")
 
     # SALVAR CACHE NO REDIS SE TIVER TELEFONE
     if telefone and validated_products:

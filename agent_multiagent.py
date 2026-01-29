@@ -10,7 +10,7 @@ import re
 import operator
 from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage, AIMessage, ToolMessage
+from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage, AIMessage
 from langchain_core.tools import tool
 from langgraph.graph import StateGraph, END, START
 from langgraph.prebuilt import create_react_agent
@@ -638,7 +638,7 @@ def vendedor_node(state: AgentState) -> dict:
     # Configuração
     config = {
         "configurable": {"thread_id": state["phone"]},
-        "recursion_limit": 45
+        "recursion_limit": 15
     }
     
     # Executar
@@ -961,41 +961,6 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
         if not output or not output.strip():
             output = "Desculpe, tive um problema ao processar. Pode repetir por favor?"
         
-        # 6.5. Extrair Mídia de ToolOutputs (Ex: Encarte)
-        media_url = None
-        try:
-            for i, msg in enumerate(reversed(result.get("messages", []))):
-                # DEBUG: Verificando tipos de mensagens no histórico
-                if i < 10: # Aumentar para 10
-                    logger.info(f"[MEDIA_CHECK] Msg {i}: {type(msg).__name__} | Name: {getattr(msg, 'name', 'N/A')} | Content: {str(msg.content)[:50]}...")
-                
-                if isinstance(msg, ToolMessage) and msg.name == "consultar_encarte":
-                    logger.info(f"✅ ToolMessage de encarte encontrado! Content: {msg.content[:100]}...")
-                    # Tente extrair URL do JSON
-                    import json
-                    try:
-                        data = json.loads(msg.content)
-                        # Tenta pegar lista de ativos primeiro
-                        actives = data.get("active_encartes_urls", [])
-                        if actives and isinstance(actives, list) and len(actives) > 0:
-                            media_url = actives[0] # Pega o primeiro por enquanto
-                        else:
-                            media_url = data.get("encarte_url") or data.get("url")
-                            
-                        if media_url and not media_url.startswith("http"):
-                           # Fallback para domínio se for relativo (embora a tool já deva corrigir)
-                           # Mas a tool corrigiu no JSON, então deve estar ok.
-                           # Se ainda for relativo:
-                           media_url = f"https://app.aimerc.com.br{media_url}"
-                           
-                        if media_url:
-                            logger.info(f"🖼️ Mídia extraída do tool output: {media_url}")
-                            break
-                    except:
-                        logger.error("Erro parse JSON media")
-        except Exception as e:
-            logger.error(f"Erro ao extrair mídia: {e}")
-
         logger.info(f"✅ [MULTI-AGENT] Resposta: {output[:200]}...")
         
         # 7. Salvar histórico (IA)
@@ -1005,7 +970,7 @@ def run_agent_langgraph(telefone: str, mensagem: str) -> Dict[str, Any]:
             except Exception as e:
                 logger.error(f"Erro DB AI: {e}")
 
-        return {"output": output, "media_url": media_url, "error": None}
+        return {"output": output, "error": None}
         
     except Exception as e:
         logger.error(f"Falha agente: {e}", exc_info=True)
