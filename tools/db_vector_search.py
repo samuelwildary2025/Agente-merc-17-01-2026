@@ -376,29 +376,53 @@ def search_products_vector(query: str, limit: int = 20) -> str:
                 # =========================================================================
                 # 🎯 RE-RANKING PARA TERMOS GENÉRICOS (EX: "TOMATE", "ABACAXI")
                 # =========================================================================
-                # Se a query for uma única palavra, prioriza nomes curtos que começam com o termo.
+                # Se a query for uma única palavra OU estiver no nosso mapa de prioridades.
                 # Isso evita que "Tomate Cajá" venha antes de "Tomate" só por score vetorial.
+                query_clean_check = query.lower().strip()
+                
+                # Regras específicas de preferência para ambiguidades conhecidas
+                # Termo de busca -> [Termos Prioritários (bonus), Termos Depreciados (penalidade)]
+                # Se "batata" -> Preferir "inglesa", "branca". Evitar "doce", "salsa", "palha".
+                POSSIBLE_KEYS = {
+                     "batata": (["inglesa", "branca", "lavada"], ["doce", "salsa", "palha", "congelada"]),
+                     "cebola": (["branca", "comum"], ["roxa", "palha"]),
+                     "tomate": (["comum", "salada"], ["cereja", "caja", "pelado"]),
+                     "limao": (["taiti", "comum"], ["siciliano"]),
+                     "peito de frango": ([], ["1kg", "1000g", "defumado"]), # Penalizar fixo de 1kg, preferir variável (bandeja)
+                     "frango": ([], []), 
+                }
+                
+                brand_priority = []
+                brand_penalty = []
+                is_mapped = False
+                
+                # Check precise matches first, then partial matches
+                if query_clean_check in POSSIBLE_KEYS:
+                     brand_priority, brand_penalty = POSSIBLE_KEYS[query_clean_check]
+                     is_mapped = True
+                else:
+                     # Fallback for partial matches (e.g. "peito frango")
+                     for k, v in POSSIBLE_KEYS.items():
+                         if k in query_clean_check:
+                             brand_priority, brand_penalty = v
+                             is_mapped = True
+                             break
+                
+                # Só aplica se for query de 1 palavra (genérica) OU se foi mapeado explicitamente
                 query_words = query.strip().split()
-                if len(query_words) == 1 and len(query) > 2:
-                     logger.info(f"📏 [GENERIC BOOST] Aplicando ordenação por tamanho de nome para: '{query}'")
+                if (len(query_words) == 1 and len(query) > 2) or is_mapped:
+                     logger.info(f"📏 [GENERIC BOOST] Aplicando reordenação para: '{query}'")
                      
-                     # Regras específicas de preferência para ambiguidades conhecidas
-                     # Termo de busca -> [Termos Prioritários (bonus), Termos Depreciados (penalidade)]
-                     # Se "batata" -> Preferir "inglesa", "branca". Evitar "doce", "salsa", "palha".
-                     PRIORITY_MAP = {
-                         "batata": (["inglesa", "branca", "lavada"], ["doce", "salsa", "palha", "congelada"]),
-                         "cebola": (["branca", "comum"], ["roxa", "palha"]),
-                         "tomate": (["comum", "salada"], ["cereja", "caja", "pelado"]),
-                         "limao": (["taiti", "comum"], ["siciliano"]),
-                     }
-
-                     brand_priority, brand_penalty = PRIORITY_MAP.get(query.lower().strip(), ([], []))
-
+                     # 🛡️ PROTEÇÃO: Se o usuário DIGITOU o termo penalizado, ignorar a penalidade
+                     # Ex: "peito de frango 1kg" -> Não penalizar "1kg"
+                     final_penalty = [p for p in brand_penalty if p not in query_clean_check]
+                     final_priority = brand_priority # Priority sempre aplica
+                     
                      def get_sort_key(item):
                         # Extrair nome usando a mesma lógica do formatter
                         _, name = _extract_ean_and_name(item)
                         name_clean = name.lower().strip()
-                        query_clean = query.lower().strip()
+                        q_clean = query.lower().strip()
                         
                         # Penalidade base (preserva ordem original do ranker se não casar regras)
                         # Usamos index original para estabilidade
@@ -414,11 +438,11 @@ def search_products_vector(query: str, limit: int = 20) -> str:
                         
                         priority_score = 3 # Default: Generic Standard
                         
-                        is_deprecated = any(p in name_clean for p in brand_penalty)
-                        is_prioritized = any(p in name_clean for p in brand_priority)
+                        is_deprecated = any(p in name_clean for p in final_penalty)
+                        is_prioritized = any(p in name_clean for p in final_priority)
                         
                         # 1. Match Exato (Melhor possível)
-                        if name_clean == query_clean:
+                        if name_clean == q_clean:
                             priority_score = 0
                         
                         elif is_deprecated:
@@ -426,15 +450,15 @@ def search_products_vector(query: str, limit: int = 20) -> str:
                         
                         elif is_prioritized:
                             # Se for priorizado, melhora o score
-                            if name_clean.startswith(query_clean):
+                            if name_clean.startswith(q_clean):
                                 priority_score = 1
                             else:
                                 priority_score = 2
                         
-                        elif name_clean.startswith(query_clean):
+                        elif name_clean.startswith(q_clean):
                             priority_score = 3
                         
-                        elif query_clean in name_clean:
+                        elif q_clean in name_clean:
                             priority_score = 4
                             
                         return (priority_score, len(name_clean), -original_score)
