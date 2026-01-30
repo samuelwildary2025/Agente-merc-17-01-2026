@@ -417,6 +417,8 @@ def search_products_vector(query: str, limit: int = 20) -> str:
                      "limao": (["taiti", "comum"], ["siciliano"]),
                      "peito de frango": ([], ["1kg", "1000g", "defumado"]), # Penalizar fixo de 1kg, preferir variável (bandeja)
                      "frango": ([], []), 
+                     "biscoito": (["125g"], ["400g", "330g"]),  # Preferir 125g por padrão
+                     "bisc rech": (["125g"], ["400g", "330g"]),  # Preferir 125g por padrão
                 }
                 
                 brand_priority = []
