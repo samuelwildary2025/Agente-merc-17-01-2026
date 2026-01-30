@@ -57,14 +57,14 @@ def _get_fast_llm():
 
 
 @tool("vector_search")
-def vector_search_tool(query: str, limit: int = 10) -> str:
+def vector_search_tool(query: str, limit: int = 15) -> str:
     """
     Busca produtos no índice vetorial e retorna resultados relevantes.
     """
     return search_products_vector(query, limit=limit)
 
 
-def run_vector_search_subagent(query: str, limit: int = 10, thread_id: Optional[str] = None) -> str:
+def run_vector_search_subagent(query: str, limit: int = 15, thread_id: Optional[str] = None) -> str:
     q = (query or "").strip()
     if not q:
         return "Nenhum produto encontrado."
