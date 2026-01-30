@@ -182,6 +182,17 @@ def search_products_vector(query: str, limit: int = 20) -> str:
         "café": "cafe",
         "maçã": "maca",
         "feijão": "feijao",
+        # 🔄 NORMALIZAÇÃO DE PLURAL: "cebolas" -> "cebola" (ANTES do boost de categoria)
+        "cebolas": "cebola",
+        "tomates": "tomate",
+        "batatas": "batata",
+        "limoes": "limao",
+        "limões": "limao",
+        "abacaxis": "abacaxi",
+        "laranjas": "laranja",
+        "bananas": "banana",
+        "maçãs": "maca",
+        "macas": "maca",
         # Café - PRIORIZAR TRADICIONAL sobre descafeinado
         "cafe pilao": "cafe pilao tradicional 500g",
         "pilao": "cafe pilao tradicional 500g",
@@ -380,6 +391,22 @@ def search_products_vector(query: str, limit: int = 20) -> str:
                 # Isso evita que "Tomate Cajá" venha antes de "Tomate" só por score vetorial.
                 query_clean_check = query.lower().strip()
                 
+                # 🔄 NORMALIZAÇÃO DE PLURAL: "cebolas" -> "cebola", "tomates" -> "tomate"
+                # Isso garante que queries no plural também casem com o mapa de prioridades.
+                PLURAL_MAP = {
+                    "cebolas": "cebola",
+                    "tomates": "tomate",
+                    "batatas": "batata",
+                    "limoes": "limao",
+                    "limões": "limao",
+                    "abacaxis": "abacaxi",
+                    "laranjas": "laranja",
+                    "bananas": "banana",
+                    "maçãs": "maca",
+                    "macas": "maca",
+                }
+                query_normalized = PLURAL_MAP.get(query_clean_check, query_clean_check)
+                
                 # Regras específicas de preferência para ambiguidades conhecidas
                 # Termo de busca -> [Termos Prioritários (bonus), Termos Depreciados (penalidade)]
                 # Se "batata" -> Preferir "inglesa", "branca". Evitar "doce", "salsa", "palha".
@@ -397,13 +424,13 @@ def search_products_vector(query: str, limit: int = 20) -> str:
                 is_mapped = False
                 
                 # Check precise matches first, then partial matches
-                if query_clean_check in POSSIBLE_KEYS:
-                     brand_priority, brand_penalty = POSSIBLE_KEYS[query_clean_check]
+                if query_normalized in POSSIBLE_KEYS:
+                     brand_priority, brand_penalty = POSSIBLE_KEYS[query_normalized]
                      is_mapped = True
                 else:
                      # Fallback for partial matches (e.g. "peito frango")
                      for k, v in POSSIBLE_KEYS.items():
-                         if k in query_clean_check:
+                         if k in query_normalized:
                              brand_priority, brand_penalty = v
                              is_mapped = True
                              break
@@ -422,7 +449,8 @@ def search_products_vector(query: str, limit: int = 20) -> str:
                         # Extrair nome usando a mesma lógica do formatter
                         _, name = _extract_ean_and_name(item)
                         name_clean = name.lower().strip()
-                        q_clean = query.lower().strip()
+                        # Usar query normalizada para match (singular)
+                        q_norm = query_normalized
                         
                         # Penalidade base (preserva ordem original do ranker se não casar regras)
                         # Usamos index original para estabilidade
@@ -442,7 +470,7 @@ def search_products_vector(query: str, limit: int = 20) -> str:
                         is_prioritized = any(p in name_clean for p in final_priority)
                         
                         # 1. Match Exato (Melhor possível)
-                        if name_clean == q_clean:
+                        if name_clean == q_norm:
                             priority_score = 0
                         
                         elif is_deprecated:
@@ -450,15 +478,15 @@ def search_products_vector(query: str, limit: int = 20) -> str:
                         
                         elif is_prioritized:
                             # Se for priorizado, melhora o score
-                            if name_clean.startswith(q_clean):
+                            if name_clean.startswith(q_norm):
                                 priority_score = 1
                             else:
                                 priority_score = 2
                         
-                        elif name_clean.startswith(q_clean):
+                        elif name_clean.startswith(q_norm):
                             priority_score = 3
                         
-                        elif q_clean in name_clean:
+                        elif q_norm in name_clean:
                             priority_score = 4
                             
                         return (priority_score, len(name_clean), -original_score)
