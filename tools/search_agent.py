@@ -193,6 +193,19 @@ def analista_produtos_tool(queries_str: str, telefone: str = None) -> str:
                 motivo = (decision or {}).get("motivo") if isinstance(decision, dict) else None
                 return (f"❌ {term}: {motivo or 'Nao encontrado'}", None)
 
+            # MODO MULTIPLAS OPÇÕES
+            opcoes = decision.get("opcoes")
+            if opcoes and isinstance(opcoes, list) and len(opcoes) > 0:
+                out_lines = [f"📋 [ANALISTA] OPÇÕES PARA '{term}' (Pergunte ao cliente):"]
+                for i, opt in enumerate(opcoes, 1):
+                    n = opt.get("nome", "Item")
+                    p = float(opt.get("preco", 0.0))
+                    out_lines.append(f"   {i}. {n} - R$ {p:.2f}")
+                
+                out_lines.append("\n⚠️ NÃO Adicionado automaticamente. Liste as opções para o cliente.")
+                return ("\n".join(out_lines), None)
+
+            # MODO ÚNICO
             nome = str(decision.get("nome") or "").strip()
             preco = float(decision.get("preco") or 0.0)
 
