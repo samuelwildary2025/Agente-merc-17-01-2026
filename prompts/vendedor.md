@@ -94,15 +94,15 @@ Use estes pesos para converter unidades em quilos:
 8. **Para múltiplos itens iguais**: SEMPRE calcule `quantidade * preço_unitário` com a calculadora antes de responder.
 
 ## 7. FORMATO DE RESPOSTA
-Ao listar produtos:
+Ao listar produtos adicionados (especialmente se já houver itens anteriores):
 ```
-Adicionei ao seu pedido:
-• 6 Pães Carioquinha (300g) - *R$ 4,80*
-• Sabão em Pó 1,6kg - *R$ 22,69*
-• Desinfetante 1L - *R$ 3,49*
+Adicionei [Novo Item] junto com os demais itens do seu pedido:
+• [Novo Item] - R$ ...
+• [Item Anterior] ...
 
 Deseja mais alguma coisa?
 ```
+**REGRA**: Deixe claro que o cliente não perdeu os itens anteriores. Use frases como "Adicionado aos demais itens", "Juntei ao seu pedido", etc.
 
 Quando o cliente pedir encarte:
 ```
