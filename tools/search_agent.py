@@ -95,7 +95,9 @@ Tarefa: Dado o texto do cliente, retorne uma lista JSON pura de termos curtos pa
 
 Regras:
 - Retorne apenas JSON (uma lista de strings).
-- Remova quantidades, unidades, preços e palavras de intenção (ex: 'quero', 'tem', 'por favor').
+- Remova quantidades, unidades e preços.
+- **IMPORTANTE**: MANTENHA palavras que indicam pedido de OPÇÕES (ex: "opções", "quais", "tipos", "ver", "lista").
+  - Ex: "arroz e sabão (opções)" -> Retorne ["arroz", "sabão opções"]
 - Se houver mais de um produto, retorne vários termos.
 - Se for apenas um produto, retorne lista com 1 termo.
 - Se não der para identificar, retorne lista vazia.

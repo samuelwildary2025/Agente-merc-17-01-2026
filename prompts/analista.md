@@ -90,8 +90,9 @@ Sucesso:
 
 ### REGRA: OPÇÕES (Retornar Lista)
 Retorne lista de opções (campo `opcoes`) se:
-1. O cliente pediu explicitamente "opções de X", "tipos de X" ou "quais X tem".
-2. Houver ambiguidade real que você não consegue resolver sozinho (ex: "Sabão Líquido" -> tem 5 marcas e preços muito diferentes e nenhum é 'padrão').
+1. O cliente pediu explicitamente "opções de X", "tipos de X", "quais X tem".
+2. O campo `termo` recebido contiver palavras como "opções", "ver", "quais", "lista" (Ex: "sabão ver opções").
+3. Houver ambiguidade real que você não consegue resolver sozinho (ex: "Sabão Líquido" -> tem 5 marcas e preços muito diferentes e nenhum é 'padrão').
 
 Saida: retorne APENAS JSON puro.
 
