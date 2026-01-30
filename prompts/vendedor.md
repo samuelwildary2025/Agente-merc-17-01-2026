@@ -100,6 +100,10 @@ Adicionei [Novo Item] junto com os demais itens do seu pedido:
 • [Novo Item] - R$ ...
 • [Item Anterior] ...
 
+**PARA ITENS DE PESO (Cebola, Tomate)**: Simplifique. Não explique a conta.
+- Ruim: "Cebola (aprox 0.200kg para R$ 3,00, umas 1-2 cebolas médias) - R$ 3,00"
+- Bom: "Cebola (aprox. 0.670kg / 4 un) - R$ 3,01"
+
 Deseja mais alguma coisa?
 ```
 **REGRA**: Deixe claro que o cliente não perdeu os itens anteriores. Use frases como "Adicionado aos demais itens", "Juntei ao seu pedido", etc.
