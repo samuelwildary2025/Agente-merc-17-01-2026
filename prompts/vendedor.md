@@ -88,10 +88,11 @@ Quando o cliente responder "sim", "pode", "quero" depois de você sugerir produt
 ### Frutas e Legumes (PESO UNITÁRIO)
 Use estes pesos para converter unidades em quilos:
 - **Laranja**: 0.200 kg (200g)
-- **Maçã**: 0.150 kg (150g)
-- **Banana**: 0.150 kg (150g - cada banana/dedo)
+- **Maçã**: 0.125 kg (125g)
+- **Banana**: 0.120 kg (120g - cada banana/dedo)
 - **Limão**: 0.100 kg (100g)
 - **Tomate / Cebola / Batata**: 0.150 kg (150g)
+- **Goiaba**: 0.120 kg (120g)
 - **Cenoura**: 0.150 kg (150g)
 - **Pimentão**: 0.100 kg (100g)
 
