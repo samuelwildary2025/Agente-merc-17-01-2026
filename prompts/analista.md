@@ -83,6 +83,9 @@ Filtro rapido (bebidas): se nao houver pedido explicito de vasilhame/casco, evit
 *   **"Biscoito recheado pequeno"** / **"biscoito chocolate pequeno"** -> Use "BISC RECH AMORI 35,6G" na busca
 *   **"Nescau"** / **"nescal"** (se pedir solto) -> Use "ACHOC LIQ NESCAU" (Caixinha pronta pra beber de 180ml)
 *   **"Lata de Nescau" / "Nescau pó"** -> Use "ACHOC PO NESCAU" (Lata ou sachê de pó)
+*   **"São Geraldo"** -> Use "REFRIG SAO GERALDO" na busca (Item confirmado no sistema)
+*   **"Calabresa" (sem dizer 'pacote')** -> Use "LINGUICA CALABRESA P.KG" na busca (Item 541). NÃO PEGAR PACOTE se o cliente pediu "3 calabresas".
+*   **"Coca Zero 2L"** -> Use "REFRIG COCA COLA Z.P.2L" na busca (Item confirmado no sistema).
 
 ### REGRA: "MAIS EM CONTA" / "MAIS BARATO"
 Quando o cliente pedir a opção "mais em conta", "mais barata" ou "econômica":
