@@ -233,7 +233,7 @@ class WorkerSettings:
     
     # Configurações de concorrência e retry
     max_jobs = settings.workers_max_jobs  # Máximo de jobs simultâneos (5)
-    job_timeout = 300  # Timeout de 5 minutos por job
+    job_timeout = 600  # Timeout de 10 minutos por job (aumentado para pedidos grandes)
     max_tries = settings.worker_retry_attempts  # 3 tentativas
     
     # Configurações de saúde e monitoramento

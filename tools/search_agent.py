@@ -66,7 +66,7 @@ def _run_analista_agent_for_term(term: str, telefone: Optional[str] = None) -> d
         ensure_ascii=False,
     )
 
-    config = {"recursion_limit": 12}
+    config = {"recursion_limit": 8}
     if telefone:
         config["configurable"] = {"thread_id": telefone}
 
@@ -109,9 +109,13 @@ Texto do cliente: {text}
 # 2. Configurações do Modelo
 # ============================================
 
+_HTTP_CLIENT_CACHE = None
+_HTTP_ASYNC_CLIENT_CACHE = None
+
 def _get_fast_llm():
     """Retorna um modelo rápido e barato para tarefas de sub-agente."""
-    # Tenta usar um modelo "Flash" ou "Mini" se disponível, senão usa o padrão
+    global _HTTP_CLIENT_CACHE, _HTTP_ASYNC_CLIENT_CACHE
+
     # PREFERÊNCIA: Usar o modelo configurado no settings (ex: grok-beta)
     model_name = getattr(settings, "llm_model", "gemini-2.5-flash")
     temp = 0.0 # Temperatura zero para precisão
@@ -136,15 +140,19 @@ def _get_fast_llm():
             client_kwargs["base_url"] = settings.openai_api_base
 
         import httpx
-        http_client = httpx.Client()
-        http_async_client = httpx.AsyncClient()
+        
+        # Singleton Clients para evitar abrir mil conexões no loop
+        if _HTTP_CLIENT_CACHE is None:
+            _HTTP_CLIENT_CACHE = httpx.Client(timeout=30.0)
+        if _HTTP_ASYNC_CLIENT_CACHE is None:
+            _HTTP_ASYNC_CLIENT_CACHE = httpx.AsyncClient(timeout=30.0)
         
         return ChatOpenAI(
             model=model_name,
             api_key=settings.openai_api_key,
             temperature=temp,
-            http_client=http_client,
-            http_async_client=http_async_client,
+            http_client=_HTTP_CLIENT_CACHE,
+            http_async_client=_HTTP_ASYNC_CLIENT_CACHE,
             **client_kwargs
         )
 
