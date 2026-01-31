@@ -414,7 +414,7 @@ def estoque_preco(ean: str) -> str:
             # Chaves de quantidade em ordem de prioridade
             STOCK_QTY_KEYS = [
                 "qtd_produto",  # Chave principal do sistema
-                "qtd_movimentacao", # FALLBACK: Muitas vezes o estoque real vem aqui neste sistema
+                # "qtd_movimentacao", # REMOVIDO: Cliente confirmou que este campo não serve para estoque (gera falso positivo)
                 "estoque", "qtd", "qtde", "qtd_estoque", "quantidade", "quantidade_disponivel",
                 "quantidadeDisponivel", "qtdDisponivel", "qtdEstoque", "estoqueAtual", "saldo",
                 "qty", "quantity", "stock", "amount"
@@ -490,15 +490,27 @@ def estoque_preco(ean: str) -> str:
                 return False
 
             def _extract_qty(d: Dict[str, Any]) -> Optional[float]:
+                # 1. Prioridade Absoluta: qtd_produto
+                # Se este campo existir, ele é a verdade absoluta (mesmo que seja 0)
+                if "qtd_produto" in d:
+                    try:
+                        return float(str(d.get("qtd_produto")).replace(',', '.'))
+                    except Exception:
+                        pass
+                
+                # 2. Fallback: Procurar outros campos positivos
                 best_qty = None
                 for k in STOCK_QTY_KEYS:
+                    # Já verificamos qtd_produto acima
+                    if k == "qtd_produto": continue
+                    
                     if k in d:
                         try:
                             val = float(str(d.get(k)).replace(',', '.'))
                             if val > 0:
-                                return val # Achou estoque positivo!
+                                return val # Achou estoque positivo em campo secundário
                             if best_qty is None:
-                                best_qty = val # Guarda o primeiro (ex: 0.0) como fallback se nada for > 0
+                                best_qty = val # Guarda o primeiro zero encontrado como fallback
                         except Exception:
                             pass
                 return best_qty
