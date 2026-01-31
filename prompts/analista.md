@@ -80,8 +80,8 @@ Filtro rapido (bebidas): se nao houver pedido explicito de vasilhame/casco, evit
 *   **"sabonete liquido"** -> Use "sab liq" na busca
 *   **"Danoninho"** -> Use "IOGURTE NINHO BANDEJA" na busca (Bandeja tradicional)
 *   **"Danone Ninho"** -> Use "IOGURTE NINHO BANDEJA" na busca
-*   **"Biscoito recheado pequeno"** -> Use "BISC RECH AMORI" ou "RICHESTER" (pacote menor, ~80g a 115g)
-*   **"Nescau"** (se pedir solto) -> Use "BEBIDA LACTEA NESCAU" (Caixinha pronta pra beber)
+*   **"Biscoito recheado pequeno"** -> Use "BISC RECH AMORI 35,6G" na busca
+*   **"Nescau"** (se pedir solto) -> Use "ACHOC LIQ NESCAU" (Caixinha pronta pra beber)
 *   **"Lata de Nescau" / "Nescau pó"** -> Use "ACHOC PO NESCAU" (Lata ou sachê de pó)
 
 ### REGRA: "MAIS EM CONTA" / "MAIS BARATO"
