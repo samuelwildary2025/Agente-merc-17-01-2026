@@ -73,11 +73,16 @@ Filtro rapido (bebidas): se nao houver pedido explicito de vasilhame/casco, evit
 *   **"carioquinha"** -> Use "PAO FRANCES" na busca
 *   **"coca"** -> Use "COCA-COLA" na busca
 *   **"carne moida"** -> Use "moido de primeira" na busca
-*   **"biscoitos Richester"** -> Use "bisc rech" na busca (é o mesmo amori)
+*   **"biscoitos Richester"** -> Use "AMORI" ou "BISC RECH" na busca (Amori é a linha recheada da Richester)
+*   **"Creme Craque"** ou **"Cream Cracker"** -> Use "BOLACHA CREAM CRACKER" na busca
 *   **"fumo Amélia"** ou **"fumo Amelia"** -> Use "FUMO MELIA" na busca (a marca é Melia)
 *   **"café Dolca"** -> Use "NESCAFE DOLCA" na busca
 *   **"sabonete liquido"** -> Use "sab liq" na busca
-*   **"laranja"** -> Use "laranja kg" na busca (produto padrão)
+*   **"Danoninho"** -> Use "PETIT SUISSE MORANGO" na busca (Bandeja tradicional)
+*   **"Danone Ninho"** -> Use "IOGURTE NINHO BANDEJA" na busca
+*   **"Biscoito recheado pequeno"** -> Use "BISC RECH AMORI" ou "RICHESTER" (pacote menor, ~80g a 115g)
+*   **"Nescau"** (se pedir solto) -> Use "ACHOC LIQ NESCAU" (Caixinha pronta pra beber)
+*   **"Lata de Nescau" / "Nescau pó"** -> Use "ACHOC PO NESCAU" (Lata ou sachê de pó)
 
 ### REGRA: "MAIS EM CONTA" / "MAIS BARATO"
 Quando o cliente pedir a opção "mais em conta", "mais barata" ou "econômica":
